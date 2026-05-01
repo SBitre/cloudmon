@@ -26,7 +26,7 @@ Architecture diagram: [`docs/architecture.md`](docs/architecture.md)
 
 | Role | Owner | Folder ownership |
 |---|---|---|
-| Infrastructure Lead | [Your name] | `/terraform`, `/scripts` |
+| Infrastructure Lead | Sumukh Pitre | `/terraform`, `/scripts` |
 | Backend Engineer | TBD | `/lambdas/ingest`, `/lambdas/api` |
 | Detection + AI Engineer | TBD | `/lambdas/detection` |
 | Simulator + Frontend | TBD | `/simulator`, `/dashboard` |
