@@ -15,3 +15,11 @@ module "storage" {
 
   project_name = var.project_name
 }
+
+module "ingest" {
+  source = "./modules/ingest"
+
+  project_name      = var.project_name
+  events_table_name = module.storage.events_table_name
+  events_table_arn  = module.storage.events_table_arn
+}
