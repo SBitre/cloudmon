@@ -104,7 +104,7 @@ def detect_anomalies(events):
         if event_type == "api_error":
             api_errors_by_service[service].append(event)
 
-        if event_type == "payment_failure":
+        if event_type == "payment_failed":
             payment_failures_by_service[service].append(event)
 
     for ip_address, triggering_events in failed_logins_by_ip.items():
@@ -113,7 +113,7 @@ def detect_anomalies(events):
                 "alert_id": str(uuid.uuid4()),
                 "service": triggering_events[0].get("service", "login-service"),
                 "anomaly_type": "failed_login_burst",
-                "severity": "high",
+                "severity": "critical",
                 "explanation": f"{len(triggering_events)} failed login attempts detected from IP {ip_address}.",
                 "recommended_actions": [
                     "Review authentication logs for brute force activity.",
@@ -128,7 +128,7 @@ def detect_anomalies(events):
                 "alert_id": str(uuid.uuid4()),
                 "service": service,
                 "anomaly_type": "api_error_spike",
-                "severity": "medium",
+                "severity": "warning",
                 "explanation": f"{len(triggering_events)} API error events detected for {service}.",
                 "recommended_actions": [
                     "Check recent deployments or service health.",
@@ -196,6 +196,7 @@ def lambda_handler(event, context):
 
             for alert in alerts:
                 logger.warning("Alert detected for %s: %s", service, alert)
+                alerts_table.put_item(Item=alert)
                 total_alerts += 1
 
         except Exception as e:
