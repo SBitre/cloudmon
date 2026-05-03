@@ -29,8 +29,8 @@ Architecture diagram: [`docs/architecture.md`](docs/architecture.md)
 | Infrastructure Lead | Sumukh Pitre | `/terraform`, `/scripts` |
 | Backend Engineer | Darkhan & Kanav | `/lambdas/ingest`, `/lambdas/api` |
 | Detection + AI Engineer | Gospelhope | `/lambdas/detection` |
-| Simulator + Frontend | TBD | `/simulator`, `/dashboard` |
-| Documentation + Demo | TBD | `/docs` |
+| Simulator + Frontend | Mehek | `/simulator`, `/dashboard` |
+| Documentation + Demo | Kanav | `/docs` |
 
 ## Branching & contributing
 
