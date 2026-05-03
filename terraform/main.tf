@@ -23,3 +23,13 @@ module "ingest" {
   events_table_name = module.storage.events_table_name
   events_table_arn  = module.storage.events_table_arn
 }
+
+module "detection" {
+  source = "./modules/detection"
+
+  project_name      = var.project_name
+  events_table_name = module.storage.events_table_name
+  events_table_arn  = module.storage.events_table_arn
+  alerts_table_name = module.storage.alerts_table_name
+  alerts_table_arn  = module.storage.alerts_table_arn
+}
