@@ -11,6 +11,7 @@ add Gemini integration for explanations, and produce schema-compliant alerts.
 Until then, this Lambda runs successfully but produces no alerts because
 the field mismatch causes all events to be filtered out.
 """
+from google import genai
 import uuid
 from collections import defaultdict
 import json
@@ -41,6 +42,49 @@ FAILED_LOGIN_THRESHOLD = 10
 API_ERROR_THRESHOLD = 10
 PAYMENT_FAILURE_THRESHOLD = 5
 
+def generate_ai_explanation(alert):
+    api_key = os.environ.get("GEMINI_API_KEY")
+
+    if not api_key:
+        logger.warning("GEMINI_API_KEY not set, using fallback explanation")
+        return {
+            "explanation": alert["explanation"],
+            "recommended_actions": alert["recommended_actions"]
+        }
+
+    try:
+        client = genai.Client(api_key=api_key)
+
+        prompt = f"""
+        You are an incident response assistant.
+
+        Explain this cloud monitoring anomaly in simple English.
+
+        Anomaly type: {alert.get("anomaly_type")}
+        Service: {alert.get("service")}
+        Severity: {alert.get("severity")}
+        Triggering event count: {len(alert.get("triggering_events", []))}
+
+        Return JSON only with this structure:
+        {{
+          "explanation": "short explanation",
+          "recommended_actions": ["action 1", "action 2", "action 3"]
+        }}
+        """
+
+        response = client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=prompt
+        )
+
+        return json.loads(response.text)
+
+    except Exception as e:
+        logger.error("Gemini explanation failed: %s", str(e))
+        return {
+            "explanation": alert["explanation"],
+            "recommended_actions": alert["recommended_actions"]
+        }
 
 def detect_anomalies(events):
     alerts = []
@@ -107,6 +151,19 @@ def detect_anomalies(events):
                 ],
                 "triggering_events": triggering_events
             })
+
+    for alert in alerts:
+        ai_result = generate_ai_explanation(alert)
+
+        alert["explanation"] = ai_result.get(
+            "explanation",
+            alert["explanation"]
+        )
+
+        alert["recommended_actions"] = ai_result.get(
+            "recommended_actions",
+            alert["recommended_actions"]
+        )
 
     return alerts
 
