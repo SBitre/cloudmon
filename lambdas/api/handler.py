@@ -1,27 +1,21 @@
-"""
-Placeholder read API Lambda handler.
-
-This will be replaced by Darkhan's real implementation.
-For now, it returns mock data so the dashboard developer can build against
-a real endpoint immediately, without waiting for the database query logic.
-
-Routes handled:
-  GET /alerts            -> list of recent alerts
-  GET /events/volume     -> event count grouped by minute
-
-When the real handler lands, it will query DynamoDB instead of returning
-hardcoded mock data. The response shape stays the same, so the dashboard
-won't need changes.
-"""
 import json
 import logging
+import os
+import boto3
+from boto3.dynamodb.conditions import Key, Attr
 from datetime import datetime, timedelta, timezone
 
+# Initialize logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+# Initialize DynamoDB
+dynamodb = boto3.resource('dynamodb')
+ALERTS_TABLE = os.environ.get("ALERTS_TABLE_NAME", "cloudmon-alerts")
+EVENTS_TABLE = os.environ.get("EVENTS_TABLE_NAME", "cloudmon-events")
 
 def make_response(status_code, body):
+    """Helper to build API Gateway responses with CORS support."""
     return {
         "statusCode": status_code,
         "headers": {
@@ -33,65 +27,81 @@ def make_response(status_code, body):
         "body": json.dumps(body),
     }
 
-
 def get_alerts(query_params):
-    """Mock: return a fake list of recent alerts."""
+    """Query real alerts from DynamoDB."""
     limit = int(query_params.get("limit", 50))
+    table = dynamodb.Table(ALERTS_TABLE)
     
-    # Mock data — replace with DynamoDB scan/query when real handler lands
-    mock_alerts = [
-        {
-            "alert_id": "mock-alert-001",
-            "timestamp": (datetime.now(timezone.utc) - timedelta(minutes=2)).isoformat().replace("+00:00", "Z"),
-            "service": "login-service",
-            "anomaly_type": "FAILED_LOGIN_SPIKE",
-            "severity": "warning",
-            "explanation": "Mock data — placeholder API. Real explanations will come from Gemini once detection refactor + Gemini integration land.",
-            "recommended_actions": [
-                "This is mock data",
-                "Real alerts will appear once detection refactor is merged",
-            ],
-            "triggering_events": [],
-        },
-        {
-            "alert_id": "mock-alert-002",
-            "timestamp": (datetime.now(timezone.utc) - timedelta(minutes=8)).isoformat().replace("+00:00", "Z"),
-            "service": "payment-service",
-            "anomaly_type": "PAYMENT_FAILURE_BURST",
-            "severity": "error",
-            "explanation": "Mock alert — confirms dashboard rendering works for the 'error' severity color.",
-            "recommended_actions": ["Mock"],
-            "triggering_events": [],
-        },
-    ][:limit]
-    
-    return make_response(200, {"alerts": mock_alerts, "count": len(mock_alerts)})
-
+    try:
+        # Since we need recent alerts, we scan or query. 
+        # For small scale, a scan with a manual sort is fine.
+        response = table.scan(Limit=limit)
+        items = response.get('Items', [])
+        
+        # Sort by timestamp descending (newest first)
+        items.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        return make_response(200, {"alerts": items, "count": len(items)})
+    except Exception as e:
+        logger.error(f"DynamoDB Error in get_alerts: {str(e)}")
+        raise e
 
 def get_event_volume(query_params):
-    """Mock: return fake event counts grouped by minute."""
-    window = query_params.get("window", "30m")
-    minutes = int(window.rstrip("m"))
+    """Fetch real events and aggregate them into 1-minute buckets."""
+    window_param = query_params.get("window", "30m")
+    minutes = int(window_param.rstrip("m"))
     
+    # Calculate cutoff time
     now = datetime.now(timezone.utc)
-    buckets = []
-    for i in range(minutes, 0, -1):
-        bucket_time = (now - timedelta(minutes=i)).replace(second=0, microsecond=0)
-        # Mock: oscillating count between 3-12 to make a visible chart
-        count = 5 + (i % 7)
-        buckets.append({
-            "minute": bucket_time.isoformat().replace("+00:00", "Z"),
-            "count": count,
-        })
+    cutoff_time = (now - timedelta(minutes=minutes)).isoformat().replace("+00:00", "Z")
     
-    return make_response(200, {"buckets": buckets, "window": window})
+    table = dynamodb.Table(EVENTS_TABLE)
+    
+    try:
+        # Query events from the last N minutes
+        # Note: In production with high volume, you'd use a GSI on timestamp.
+        # For now, we use scan with a FilterExpression.
+        response = table.scan(
+            FilterExpression=Attr('timestamp').gte(cutoff_time)
+        )
+        events = response.get('Items', [])
+        
+        # Aggregate by minute: {"2026-05-03T12:01": 5}
+        buckets_map = {}
+        
+        # Pre-fill buckets with 0 to ensure the chart has no gaps
+        for i in range(minutes, -1, -1):
+            t = (now - timedelta(minutes=i)).strftime("%Y-%m-%dT%H:%M")
+            buckets_map[t] = 0
 
+        for event in events:
+            # Grouping key is YYYY-MM-DDTHH:MM (ignoring seconds)
+            minute_key = event['timestamp'][:16]
+            if minute_key in buckets_map:
+                buckets_map[minute_key] += 1
+            else:
+                # In case an event is slightly outside our pre-filled range
+                buckets_map[minute_key] = 1
+
+        # Format for frontend chart
+        formatted_buckets = [
+            {"minute": f"{m}:00Z", "count": c} 
+            for m, c in sorted(buckets_map.items())
+        ]
+        
+        return make_response(200, {
+            "buckets": formatted_buckets, 
+            "window": window_param,
+            "total_events": len(events)
+        })
+    except Exception as e:
+        logger.error(f"DynamoDB Error in get_event_volume: {str(e)}")
+        raise e
 
 def lambda_handler(event, context):
-    """Route incoming HTTP API requests to the right handler."""
+    """Route incoming HTTP API requests."""
     logger.info("Received event: %s", json.dumps(event))
     
-    # API Gateway HTTP API v2.0 payload format
     route_key = event.get("routeKey", "")
     query_params = event.get("queryStringParameters") or {}
     
