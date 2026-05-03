@@ -11,6 +11,8 @@ add Gemini integration for explanations, and produce schema-compliant alerts.
 Until then, this Lambda runs successfully but produces no alerts because
 the field mismatch causes all events to be filtered out.
 """
+import uuid
+from collections import defaultdict
 import json
 import os
 import logging
@@ -21,7 +23,10 @@ from boto3.dynamodb.conditions import Key
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-dynamodb = boto3.resource("dynamodb")
+dynamodb = boto3.resource(
+    "dynamodb",
+    region_name=os.environ.get("AWS_REGION", "us-east-1")
+)
 EVENTS_TABLE_NAME = os.environ.get("EVENTS_TABLE_NAME", "cloudmon-events")
 ALERTS_TABLE_NAME = os.environ.get("ALERTS_TABLE_NAME", "cloudmon-alerts")
 
@@ -32,18 +37,77 @@ MONITORED_SERVICES = ["login-service", "checkout-service", "payment-service", "a
 LOOKBACK_MINUTES = 5
 
 
+FAILED_LOGIN_THRESHOLD = 10
+API_ERROR_THRESHOLD = 10
+PAYMENT_FAILURE_THRESHOLD = 5
+
+
 def detect_anomalies(events):
-    """
-    Original detection logic from gospelhope's PR.
-    Will be replaced when the refactor lands (will use snake_case + Gemini).
-    """
     alerts = []
-    failed_logins = [e for e in events if e.get("eventType") == "failed_login"]
-    if len(failed_logins) > 10:
-        alerts.append({
-            "type": "FAILED_LOGIN_SPIKE",
-            "message": "High number of failed logins detected"
-        })
+
+    failed_logins_by_ip = defaultdict(list)
+    api_errors_by_service = defaultdict(list)
+    payment_failures_by_service = defaultdict(list)
+
+    for event in events:
+        event_type = event.get("event_type")
+        service = event.get("service", "unknown-service")
+        ip_address = event.get("ip_address", "unknown-ip")
+
+        if event_type == "failed_login":
+            failed_logins_by_ip[ip_address].append(event)
+
+        if event_type == "api_error":
+            api_errors_by_service[service].append(event)
+
+        if event_type == "payment_failure":
+            payment_failures_by_service[service].append(event)
+
+    for ip_address, triggering_events in failed_logins_by_ip.items():
+        if len(triggering_events) >= FAILED_LOGIN_THRESHOLD:
+            alerts.append({
+                "alert_id": str(uuid.uuid4()),
+                "service": triggering_events[0].get("service", "login-service"),
+                "anomaly_type": "failed_login_burst",
+                "severity": "high",
+                "explanation": f"{len(triggering_events)} failed login attempts detected from IP {ip_address}.",
+                "recommended_actions": [
+                    "Review authentication logs for brute force activity.",
+                    "Consider temporarily blocking or rate-limiting the IP address."
+                ],
+                "triggering_events": triggering_events
+            })
+
+    for service, triggering_events in api_errors_by_service.items():
+        if len(triggering_events) >= API_ERROR_THRESHOLD:
+            alerts.append({
+                "alert_id": str(uuid.uuid4()),
+                "service": service,
+                "anomaly_type": "api_error_spike",
+                "severity": "medium",
+                "explanation": f"{len(triggering_events)} API error events detected for {service}.",
+                "recommended_actions": [
+                    "Check recent deployments or service health.",
+                    "Review CloudWatch logs for stack traces or failing dependencies."
+                ],
+                "triggering_events": triggering_events
+            })
+
+    for service, triggering_events in payment_failures_by_service.items():
+        if len(triggering_events) >= PAYMENT_FAILURE_THRESHOLD:
+            alerts.append({
+                "alert_id": str(uuid.uuid4()),
+                "service": service,
+                "anomaly_type": "payment_failure_burst",
+                "severity": "high",
+                "explanation": f"{len(triggering_events)} payment failures detected for {service}.",
+                "recommended_actions": [
+                    "Check payment provider status.",
+                    "Review checkout/payment service logs."
+                ],
+                "triggering_events": triggering_events
+            })
+
     return alerts
 
 
@@ -92,5 +156,14 @@ def lambda_handler(event, context):
 
 
 if __name__ == "__main__":
-    test_events = [{"eventType": "failed_login"} for _ in range(12)]
+    test_events = [
+        {
+            "event_type": "failed_login",
+            "service": "login-service",
+            "ip_address": "192.168.1.10",
+            "timestamp": "2026-05-02T00:00:00Z"
+        }
+        for _ in range(12)
+    ]
+
     print(detect_anomalies(test_events))
