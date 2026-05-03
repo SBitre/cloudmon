@@ -1,15 +1,15 @@
 """
 Detection Lambda handler.
 
-Runs on a schedule (EventBridge), queries recent events from DynamoDB,
-applies anomaly detection rules, and writes alerts to the alerts table.
+Runs on a schedule (EventBridge). For each monitored service, queries recent
+events from DynamoDB, applies threshold-based anomaly detection rules
+(failed-login bursts grouped by IP, API error spikes, payment failure bursts),
+and writes alerts to the alerts table.
 
-NOTE: detect_anomalies() was written before the event schema was finalized
-and uses camelCase field names. It will be refactored (see issue:
-"Refactor detection logic to match event schema") to use snake_case fields,
-add Gemini integration for explanations, and produce schema-compliant alerts.
-Until then, this Lambda runs successfully but produces no alerts because
-the field mismatch causes all events to be filtered out.
+Each alert is enriched with a Gemini-generated explanation and recommended
+actions before being persisted. If the Gemini call fails or no API key is
+configured, the alert falls back to a templated explanation so detection
+continues working.
 """
 from google import genai
 import uuid
@@ -73,7 +73,7 @@ def generate_ai_explanation(alert):
         """
 
         response = client.models.generate_content(
-            model="gemini-3-flash-preview",
+            model="gemini-2.5-flash",
             contents=prompt
         )
 
@@ -143,7 +143,7 @@ def detect_anomalies(events):
                 "alert_id": str(uuid.uuid4()),
                 "service": service,
                 "anomaly_type": "payment_failure_burst",
-                "severity": "high",
+                "severity": "critical",
                 "explanation": f"{len(triggering_events)} payment failures detected for {service}.",
                 "recommended_actions": [
                     "Check payment provider status.",
