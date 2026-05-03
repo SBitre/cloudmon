@@ -32,3 +32,18 @@ output "ingest_lambda_log_group" {
   value       = module.ingest.lambda_log_group
   description = "CloudWatch log group for the ingest Lambda"
 }
+
+output "detection_lambda_name" {
+  value       = module.detection.lambda_function_name
+  description = "Detection Lambda function name"
+}
+
+output "detection_log_group" {
+  value       = module.detection.lambda_log_group
+  description = "Detection Lambda CloudWatch log group"
+}
+
+output "detection_schedule_rule" {
+  value       = module.detection.schedule_rule_name
+  description = "EventBridge rule name for detection schedule"
+}
