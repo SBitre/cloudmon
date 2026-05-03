@@ -47,3 +47,23 @@ output "detection_schedule_rule" {
   value       = module.detection.schedule_rule_name
   description = "EventBridge rule name for detection schedule"
 }
+
+output "read_api_endpoint" {
+  value       = module.read_api.api_endpoint
+  description = "Read API base URL"
+}
+
+output "read_api_alerts_url" {
+  value       = module.read_api.alerts_url
+  description = "URL for GET /alerts"
+}
+
+output "read_api_events_volume_url" {
+  value       = module.read_api.events_volume_url
+  description = "URL for GET /events/volume"
+}
+
+output "read_api_log_group" {
+  value       = module.read_api.lambda_log_group
+  description = "CloudWatch log group for read API"
+}
