@@ -74,7 +74,10 @@ def generate_ai_explanation(alert):
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=prompt
+            contents=prompt,
+            config={
+                "response_mime_type": "application/json",
+            },
         )
 
         return json.loads(response.text)
@@ -111,6 +114,7 @@ def detect_anomalies(events):
         if len(triggering_events) >= FAILED_LOGIN_THRESHOLD:
             alerts.append({
                 "alert_id": str(uuid.uuid4()),
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "service": triggering_events[0].get("service", "login-service"),
                 "anomaly_type": "failed_login_burst",
                 "severity": "critical",
@@ -126,6 +130,7 @@ def detect_anomalies(events):
         if len(triggering_events) >= API_ERROR_THRESHOLD:
             alerts.append({
                 "alert_id": str(uuid.uuid4()),
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "service": service,
                 "anomaly_type": "api_error_spike",
                 "severity": "warning",
@@ -141,6 +146,7 @@ def detect_anomalies(events):
         if len(triggering_events) >= PAYMENT_FAILURE_THRESHOLD:
             alerts.append({
                 "alert_id": str(uuid.uuid4()),
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "service": service,
                 "anomaly_type": "payment_failure_burst",
                 "severity": "critical",
