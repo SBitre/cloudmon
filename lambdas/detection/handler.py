@@ -123,7 +123,7 @@ def detect_anomalies(events):
                     "Review authentication logs for brute force activity.",
                     "Consider temporarily blocking or rate-limiting the IP address."
                 ],
-                "triggering_events": triggering_events
+                "triggering_events": triggering_events[:5]
             })
 
     for service, triggering_events in api_errors_by_service.items():
@@ -139,7 +139,7 @@ def detect_anomalies(events):
                     "Check recent deployments or service health.",
                     "Review CloudWatch logs for stack traces or failing dependencies."
                 ],
-                "triggering_events": triggering_events
+                "triggering_events": triggering_events[:5]
             })
 
     for service, triggering_events in payment_failures_by_service.items():
@@ -155,7 +155,7 @@ def detect_anomalies(events):
                     "Check payment provider status.",
                     "Review checkout/payment service logs."
                 ],
-                "triggering_events": triggering_events
+                "triggering_events": triggering_events[:5]
             })
 
     for alert in alerts:
