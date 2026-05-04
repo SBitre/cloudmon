@@ -10,3 +10,9 @@ variable "project_name" {
     description = "Prefix for all resource names"
   
 }
+
+variable "gemini_api_key" {
+  type        = string
+  description = "Google Gemini API key (passed to detection Lambda)"
+  sensitive   = true
+}

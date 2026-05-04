@@ -66,14 +66,15 @@ resource "aws_lambda_function" "detection" {
   handler = "handler.lambda_handler"
   runtime = "python3.12"
 
-  timeout     = 30
-  memory_size = 256
+  timeout     = 90
+  memory_size = 512
 
   environment {
     variables = {
       EVENTS_TABLE_NAME = var.events_table_name
       ALERTS_TABLE_NAME = var.alerts_table_name
       LOG_LEVEL         = "INFO"
+      GEMINI_API_KEY    = var.gemini_api_key
     }
   }
 
