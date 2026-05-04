@@ -32,6 +32,7 @@ module "detection" {
   events_table_arn  = module.storage.events_table_arn
   alerts_table_name = module.storage.alerts_table_name
   alerts_table_arn  = module.storage.alerts_table_arn
+  gemini_api_key    = var.gemini_api_key
 }
 
 module "read_api" {

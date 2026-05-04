@@ -34,3 +34,9 @@ variable "schedule_expression" {
   description = "EventBridge schedule expression"
   default     = "rate(1 minute)"
 }
+
+variable "gemini_api_key" {
+  type        = string
+  description = "Google Gemini API key for anomaly explanations"
+  sensitive   = true
+}

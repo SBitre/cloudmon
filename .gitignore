@@ -47,3 +47,36 @@ lambdas/**/*.zip
 *.swp
 .DS_Store
 Thumbs.db
+
+# Python Lambda dependencies (installed via pip --target for Linux Lambda runtime)
+# Keep handler.py and requirements.txt; ignore everything else pip puts here
+lambdas/*/__pycache__/
+lambdas/*/*.dist-info/
+lambdas/*/*.so
+lambdas/*/annotated_types/
+lambdas/*/anyio/
+lambdas/*/certifi/
+lambdas/*/cffi/
+lambdas/*/charset_normalizer/
+lambdas/*/cryptography/
+lambdas/*/distro/
+lambdas/*/google/
+lambdas/*/google_auth*
+lambdas/*/google_genai*
+lambdas/*/h11/
+lambdas/*/httpcore/
+lambdas/*/httpx/
+lambdas/*/idna/
+lambdas/*/pyasn1/
+lambdas/*/pyasn1_modules/
+lambdas/*/pycparser/
+lambdas/*/pydantic/
+lambdas/*/pydantic_core/
+lambdas/*/requests/
+lambdas/*/six.py
+lambdas/*/sniffio/
+lambdas/*/tenacity/
+lambdas/*/typing_extensions.py
+lambdas/*/typing_inspection/
+lambdas/*/urllib3/
+lambdas/*/websockets/
