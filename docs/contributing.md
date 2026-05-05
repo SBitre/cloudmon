@@ -1,5 +1,3 @@
 # Contributing
 
-> **Status: stub — yet to be updated.** Tracked in [#41](https://github.com/SBitre/cloudmon/issues/41).
-
-This file is a placeholder so that links from the root `README.md` resolve. The full contributor guide (branching convention, PR workflow, commit-message style, local-setup checklist, test commands, pre-PR checklist) will be filled in as part of issue #41.
+> **Status: stub.** This file is a placeholder so that links from the root `README.md` resolve. Full content (branching convention, PR workflow, commit-message style, local-setup checklist, test commands, pre-PR checklist) is yet to be written and is the responsibility of whoever owns the `docs/` folder per the team table in `README.md`.
