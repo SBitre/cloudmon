@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import json
 
+import pytest
+
 from simulator.core.event_factory import EventFactory
 from simulator.scenarios import credential_stuffing, error_spike, payment_failure_burst
 
@@ -17,6 +19,7 @@ def test_credential_stuffing_parse_args_defaults(monkeypatch) -> None:
     assert args.count == 200
     assert args.duration == 30.0
     assert args.ip_prefix == "198.51.100"
+    assert args.single_ip is None
     assert args.timeout == 5.0
     assert args.max_retries == 2
     assert args.initial_backoff == 0.2
@@ -39,6 +42,38 @@ def test_credential_stuffing_builder_uses_sequential_ips() -> None:
     assert first["event_type"] == "failed_login"
 
 
+def test_credential_stuffing_builder_single_ip_overrides_prefix() -> None:
+    """When single_ip is set, every event uses that exact address regardless of index."""
+    factory = EventFactory(random_seed=1)
+    pinned_ip = "203.0.113.42"
+    first = credential_stuffing.build_failed_login_event(0, factory, "198.51.100", pinned_ip)
+    later = credential_stuffing.build_failed_login_event(99, factory, "198.51.100", pinned_ip)
+    assert first["ip_address"] == pinned_ip
+    assert later["ip_address"] == pinned_ip
+    assert first["service"] == "login-service"
+    assert first["event_type"] == "failed_login"
+
+
+def test_credential_stuffing_parse_args_accepts_single_ip(monkeypatch) -> None:
+    """--single-ip should be parsed and validated as IPv4."""
+    monkeypatch.setattr("sys.argv", ["credential_stuffing", "--single-ip", "198.51.100.42"])
+    args = credential_stuffing.parse_args()
+    assert args.single_ip == "198.51.100.42"
+
+
+def test_credential_stuffing_parse_args_rejects_invalid_single_ip(monkeypatch) -> None:
+    """Invalid IPv4 input via --single-ip should fail argparse."""
+    monkeypatch.setattr("sys.argv", ["credential_stuffing", "--single-ip", "not-an-ip"])
+    with pytest.raises(SystemExit):
+        credential_stuffing.parse_args()
+
+
+def test_credential_stuffing_validate_ipv4_rejects_ipv6() -> None:
+    """The shared validator must reject IPv6 literals."""
+    with pytest.raises(argparse.ArgumentTypeError):
+        credential_stuffing._validate_ipv4("::1")
+
+
 def test_credential_stuffing_parse_args_profile_override(monkeypatch, tmp_path) -> None:
     """Profile values should override default parser settings."""
     profile_path = tmp_path / "credential-profile.json"
@@ -47,6 +82,24 @@ def test_credential_stuffing_parse_args_profile_override(monkeypatch, tmp_path) 
     args = credential_stuffing.parse_args()
     assert args.count == 15
     assert args.log_format == "json"
+
+
+def test_credential_stuffing_profile_can_set_single_ip(monkeypatch, tmp_path) -> None:
+    """Profiles should be able to set --single-ip and the value is re-validated."""
+    profile_path = tmp_path / "centralized-profile.json"
+    profile_path.write_text(json.dumps({"single_ip": "192.0.2.7"}), encoding="utf-8")
+    monkeypatch.setattr("sys.argv", ["credential_stuffing", "--profile", str(profile_path)])
+    args = credential_stuffing.parse_args()
+    assert args.single_ip == "192.0.2.7"
+
+
+def test_credential_stuffing_profile_invalid_single_ip_rejected(monkeypatch, tmp_path) -> None:
+    """An invalid single_ip from a profile should fail validation post-merge."""
+    profile_path = tmp_path / "broken-profile.json"
+    profile_path.write_text(json.dumps({"single_ip": "999.999.999.999"}), encoding="utf-8")
+    monkeypatch.setattr("sys.argv", ["credential_stuffing", "--profile", str(profile_path)])
+    with pytest.raises(argparse.ArgumentTypeError):
+        credential_stuffing.parse_args()
 
 
 def test_error_spike_parse_args_defaults(monkeypatch) -> None:
