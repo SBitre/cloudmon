@@ -23,9 +23,16 @@ __pycache__/
 *$py.class
 venv/
 .venv/
+.venv-*/
 env/
 *.egg-info/
 .pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Simulator runtime output (dead-letter queue files, etc.)
+simulator/out/
 
 # Node / Next.js
 node_modules/

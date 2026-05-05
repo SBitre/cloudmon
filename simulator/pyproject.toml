@@ -1,0 +1,18 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=simulator.core.event_factory --cov=simulator.core.profile_config --cov=simulator.infra.ingest_client --cov=simulator.infra.dead_letter --cov=simulator.infra.logging --cov=simulator.cli.background --cov=simulator.cli.replay --cov=simulator.scenarios.common --cov=simulator.scenarios.credential_stuffing --cov=simulator.scenarios.error_spike --cov=simulator.scenarios.payment_failure_burst --cov-branch --cov-report=term-missing --cov-fail-under=100"
+
+[tool.coverage.run]
+source = ["simulator"]
+branch = true
+omit = ["tests/*", "*/tests/*"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+omit = ["tests/*", "*/tests/*"]
+
+[tool.mutmut]
+paths_to_mutate = ["core/event_factory.py", "core/profile_config.py", "infra/ingest_client.py", "infra/dead_letter.py", "infra/logging.py", "cli/background.py", "cli/replay.py", "scenarios/common.py", "scenarios/credential_stuffing.py", "scenarios/error_spike.py", "scenarios/payment_failure_burst.py"]
+tests_dir = ["tests"]
+runner = "python -m pytest tests -q"
