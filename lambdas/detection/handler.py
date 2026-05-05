@@ -181,6 +181,25 @@ def query_recent_events(service, lookback_minutes):
     )
     return response.get("Items", [])
 
+def recent_duplicate_exists(service, anomaly_type, cooldown_minutes=10):
+    cutoff = (
+        datetime.now(timezone.utc) - timedelta(minutes=cooldown_minutes)
+    ).isoformat().replace("+00:00", "Z")
+
+    response = alerts_table.scan()
+
+    alerts = response.get("Items", [])
+
+    for alert in alerts:
+        if (
+            alert.get("service") == service
+            and alert.get("anomaly_type") == anomaly_type
+            and alert.get("timestamp", "") >= cutoff
+        ):
+            return True
+
+    return False
+
 
 def lambda_handler(event, context):
     """
@@ -200,9 +219,26 @@ def lambda_handler(event, context):
 
             alerts = detect_anomalies(events)
 
+            
             for alert in alerts:
+
+                duplicate_exists = recent_duplicate_exists(
+                    alert["service"],
+                    alert["anomaly_type"]
+                )   
+
+                if duplicate_exists:
+                    logger.info(
+                        "Skipping duplicate alert for %s (%s)",
+                         alert["service"],
+                         alert["anomaly_type"]
+                    )
+                    continue
+
                 logger.warning("Alert detected for %s: %s", service, alert)
+
                 alerts_table.put_item(Item=alert)
+
                 total_alerts += 1
 
         except Exception as e:
