@@ -1,4 +1,5 @@
 """Tests for dead-letter replay command and helpers."""
+# pyright: reportMissingImports=false
 
 from __future__ import annotations
 
@@ -30,7 +31,7 @@ def test_parse_args_defaults_and_custom(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr("sys.argv", ["replay", "--dead-letter-path", str(dead_letter_path)])
     args = replay_module.parse_args()
-    assert args.rate == 5.0
+    assert args.rate == pytest.approx(5.0)
     assert args.limit is None
     assert args.dry_run is False
     assert args.log_format == "plain"
@@ -51,7 +52,7 @@ def test_parse_args_defaults_and_custom(monkeypatch, tmp_path) -> None:
         ],
     )
     args = replay_module.parse_args()
-    assert args.rate == 9.0
+    assert args.rate == pytest.approx(9.0)
     assert args.limit == 5
     assert args.dry_run is True
     assert args.log_format == "json"
@@ -242,7 +243,7 @@ def test_main_wires_dependencies_and_logs(monkeypatch, tmp_path) -> None:
     assert calls["ingest_kwargs"]["ingest_url"] == "https://example.com/events"
     assert calls["ingest_kwargs"]["retry_config"].max_retries == 4
     assert calls["ingest_kwargs"]["circuit_breaker_config"].failure_threshold == 6
-    assert calls["replay_call"]["kwargs"]["rate"] == 7.0
+    assert calls["replay_call"]["kwargs"]["rate"] == pytest.approx(7.0)
     assert calls["replay_call"]["kwargs"]["limit"] == 3
     assert calls["replay_call"]["kwargs"]["dry_run"] is False
 

@@ -1,4 +1,5 @@
 """Tests for scenario-specific script modules."""
+# pyright: reportMissingImports=false
 
 from __future__ import annotations
 
@@ -17,15 +18,15 @@ def test_credential_stuffing_parse_args_defaults(monkeypatch) -> None:
     args = credential_stuffing.parse_args()
     assert args.profile is None
     assert args.count == 200
-    assert args.duration == 30.0
+    assert args.duration == pytest.approx(30.0)
     assert args.ip_prefix == "198.51.100"
     assert args.single_ip is None
-    assert args.timeout == 5.0
+    assert args.timeout == pytest.approx(5.0)
     assert args.max_retries == 2
-    assert args.initial_backoff == 0.2
-    assert args.max_backoff == 2.0
+    assert args.initial_backoff == pytest.approx(0.2)
+    assert args.max_backoff == pytest.approx(2.0)
     assert args.circuit_failure_threshold == 5
-    assert args.circuit_recovery_timeout == 30.0
+    assert args.circuit_recovery_timeout == pytest.approx(30.0)
     assert args.dead_letter_path is None
     assert args.log_format == "plain"
     assert args.seed is None
@@ -108,14 +109,14 @@ def test_error_spike_parse_args_defaults(monkeypatch) -> None:
     args = error_spike.parse_args()
     assert args.profile is None
     assert args.count == 120
-    assert args.duration == 20.0
+    assert args.duration == pytest.approx(20.0)
     assert args.service == "checkout-service"
-    assert args.timeout == 5.0
+    assert args.timeout == pytest.approx(5.0)
     assert args.max_retries == 2
-    assert args.initial_backoff == 0.2
-    assert args.max_backoff == 2.0
+    assert args.initial_backoff == pytest.approx(0.2)
+    assert args.max_backoff == pytest.approx(2.0)
     assert args.circuit_failure_threshold == 5
-    assert args.circuit_recovery_timeout == 30.0
+    assert args.circuit_recovery_timeout == pytest.approx(30.0)
     assert args.dead_letter_path is None
     assert args.log_format == "plain"
     assert args.seed is None
@@ -153,14 +154,14 @@ def test_payment_failure_parse_args_defaults(monkeypatch) -> None:
     args = payment_failure_burst.parse_args()
     assert args.profile is None
     assert args.count == 80
-    assert args.duration == 20.0
+    assert args.duration == pytest.approx(20.0)
     assert args.service == "payment-service"
-    assert args.timeout == 5.0
+    assert args.timeout == pytest.approx(5.0)
     assert args.max_retries == 2
-    assert args.initial_backoff == 0.2
-    assert args.max_backoff == 2.0
+    assert args.initial_backoff == pytest.approx(0.2)
+    assert args.max_backoff == pytest.approx(2.0)
     assert args.circuit_failure_threshold == 5
-    assert args.circuit_recovery_timeout == 30.0
+    assert args.circuit_recovery_timeout == pytest.approx(30.0)
     assert args.dead_letter_path is None
     assert args.log_format == "plain"
     assert args.seed is None
