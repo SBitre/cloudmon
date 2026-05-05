@@ -1,0 +1,11 @@
+count: 120
+duration: 25
+service: checkout-service
+timeout: 4.0
+max_retries: 4
+initial_backoff: 0.2
+max_backoff: 2.5
+circuit_failure_threshold: 6
+circuit_recovery_timeout: 25.0
+log_format: json
+dead_letter_path: simulator/out/dead-letter-error-spike.jsonl

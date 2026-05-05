@@ -1,0 +1,13 @@
+{
+  "rate": 8.0,
+  "duration": 120,
+  "timeout": 4.0,
+  "max_retries": 3,
+  "initial_backoff": 0.25,
+  "max_backoff": 2.0,
+  "circuit_failure_threshold": 5,
+  "circuit_recovery_timeout": 20.0,
+  "stats_interval": 10.0,
+  "log_format": "json",
+  "dead_letter_path": "simulator/out/dead-letter-background.jsonl"
+}
