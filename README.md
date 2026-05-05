@@ -1,5 +1,7 @@
 # CloudMon — Real-Time Cloud Event Monitoring with AI Explanations
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A real-time cloud event monitoring and anomaly detection system on AWS, with an AI-powered explanation layer using Gemini. Course project for [Course Name], [Semester].
 
 ## What this is
@@ -12,7 +14,19 @@ For full context, see [`docs/project-scope.md`](docs/project-scope.md).
 
 API Gateway → Ingest Lambda → DynamoDB → Detection Lambda (scheduled) → Gemini API → Alerts table → Next.js dashboard.
 
-Architecture diagram: [`docs/architecture.md`](docs/architecture.md)
+Five Lambda-backed components, two HTTP APIs, two DynamoDB tables, one EventBridge schedule. Full diagram and resource inventory in [`docs/architecture.md`](docs/architecture.md).
+
+## Subsystems
+
+| Subsystem | Path | What it does | README |
+|---|---|---|---|
+| Infrastructure | [`terraform/`](terraform/) | Provisions all AWS resources via Terraform (S3-backed remote state) | — |
+| Ingest API | [`lambdas/ingest/`](lambdas/ingest/) | Validates incoming events and writes them to DynamoDB | — |
+| Detection | [`lambdas/detection/`](lambdas/detection/) | Scheduled scan, anomaly detection, Gemini-generated alert explanations | — |
+| Read API | [`lambdas/api/`](lambdas/api/) | Exposes `/events/volume` and `/alerts` to the dashboard | — |
+| Simulator | [`simulator/`](simulator/) | Background traffic + scenario triggers with retry, circuit breaker, dead-letter, JSON logs, profiles | [`simulator/README.md`](simulator/README.md) |
+| Dashboard | [`dashboard/`](dashboard/) | Next.js UI for live volume + alerts | — |
+| Event schema | [`docs/event-schema.md`](docs/event-schema.md) | Wire-level contract shared by all subsystems | — |
 
 ## Tech stack
 
@@ -34,21 +48,22 @@ Architecture diagram: [`docs/architecture.md`](docs/architecture.md)
 
 ## Branching & contributing
 
-- Never push to `main` directly
-- Work on feature branches: `feature/<area>-<description>` (e.g. `feature/ingest-lambda`)
-- Open PRs into `main`, get one teammate to review, merge
-- Pull latest `main` into your branch daily to avoid merge hell
+- Never push to `main` directly.
+- Branch naming: `feature/<area>-<description>`, `fix/<area>-<description>`, `bugfix/<area>-<description>`, `docs/<description>`.
+- Open PRs into `main`, get one teammate to review, merge.
+- Pull latest `main` into your branch daily to avoid merge hell.
 
 See [`docs/contributing.md`](docs/contributing.md) for full workflow.
 
 ## Timeline
 
-- **May 1–2**: Setup (AWS, repo, event schema)
-- **May 3–4**: Ingest pipeline
-- **May 5–6**: Detection + Gemini integration
-- **May 7–8**: Dashboard
-- **May 9**: Polish + docs
-- **May 10**: Submit (May 11–12 buffer)
+- [x] **May 1–2**: Setup (AWS, repo, event schema)
+- [x] **May 3–4**: Ingest pipeline
+- [x] **May 5–6**: Detection + Gemini integration
+- [x] **May 5**: Simulator with background traffic + scenario triggers
+- [ ] **May 7–8**: Dashboard
+- [ ] **May 9**: Polish + docs
+- [ ] **May 10**: Submit (May 11–12 buffer)
 
 ## Deployment
 
@@ -57,3 +72,7 @@ TBD — will be filled in by Infra Lead once Terraform is set up.
 ## Local development
 
 TBD — will be filled in as components are built.
+
+## License
+
+[MIT](LICENSE).
