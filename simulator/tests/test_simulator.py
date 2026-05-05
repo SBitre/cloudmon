@@ -1,4 +1,5 @@
 """Tests for background simulator orchestration."""
+# pyright: reportMissingImports=false
 
 from __future__ import annotations
 
@@ -138,16 +139,16 @@ def test_parse_args_defaults(monkeypatch) -> None:
     args = simulator_module.parse_args()
 
     assert args.profile is None
-    assert args.rate == 5.0
+    assert args.rate == pytest.approx(5.0)
     assert args.duration is None
     assert args.seed is None
-    assert args.timeout == 5.0
+    assert args.timeout == pytest.approx(5.0)
     assert args.max_retries == 2
-    assert args.initial_backoff == 0.2
-    assert args.max_backoff == 2.0
-    assert args.stats_interval == 30.0
+    assert args.initial_backoff == pytest.approx(0.2)
+    assert args.max_backoff == pytest.approx(2.0)
+    assert args.stats_interval == pytest.approx(30.0)
     assert args.circuit_failure_threshold == 5
-    assert args.circuit_recovery_timeout == 30.0
+    assert args.circuit_recovery_timeout == pytest.approx(30.0)
     assert args.dead_letter_path is None
     assert args.log_format == "plain"
 
@@ -186,16 +187,16 @@ def test_parse_args_custom_values(monkeypatch) -> None:
     )
     args = simulator_module.parse_args()
 
-    assert args.rate == 9.5
-    assert args.duration == 22.0
+    assert args.rate == pytest.approx(9.5)
+    assert args.duration == pytest.approx(22.0)
     assert args.seed == 13
-    assert args.timeout == 1.5
+    assert args.timeout == pytest.approx(1.5)
     assert args.max_retries == 4
-    assert args.initial_backoff == 0.4
-    assert args.max_backoff == 3.5
-    assert args.stats_interval == 12.0
+    assert args.initial_backoff == pytest.approx(0.4)
+    assert args.max_backoff == pytest.approx(3.5)
+    assert args.stats_interval == pytest.approx(12.0)
     assert args.circuit_failure_threshold == 6
-    assert args.circuit_recovery_timeout == 20.0
+    assert args.circuit_recovery_timeout == pytest.approx(20.0)
     assert args.dead_letter_path == "simulator/out/dead-letter.jsonl"
     assert args.log_format == "json"
 
@@ -216,7 +217,7 @@ def test_parse_args_applies_profile_overrides(monkeypatch, tmp_path) -> None:
     )
     monkeypatch.setattr("sys.argv", ["simulator", "--profile", str(profile_path)])
     args = simulator_module.parse_args()
-    assert args.rate == 11.0
+    assert args.rate == pytest.approx(11.0)
     assert args.max_retries == 4
     assert args.log_format == "json"
     assert args.dead_letter_path == "simulator/out/dlq.jsonl"
@@ -327,18 +328,18 @@ def test_main_wires_dependencies_and_runs(monkeypatch) -> None:
 
     simulator_module.main()
 
-    assert calls["events_per_second"] == 3.0
-    assert calls["stats_interval_seconds"] == 9.0
-    assert calls["run_duration"] == 15.0
+    assert calls["events_per_second"] == pytest.approx(3.0)
+    assert calls["stats_interval_seconds"] == pytest.approx(9.0)
+    assert calls["run_duration"] == pytest.approx(15.0)
     assert len(installed_stop_callbacks) == 1
     assert calls["event_factory"].seed == 11
     assert calls["ingest_client"].ingest_url == "https://example.com/events"
-    assert calls["ingest_client"].timeout_seconds == 1.25
+    assert calls["ingest_client"].timeout_seconds == pytest.approx(1.25)
     assert calls["ingest_client"].retry_config.max_retries == 4
-    assert calls["ingest_client"].retry_config.initial_backoff_seconds == 0.4
-    assert calls["ingest_client"].retry_config.max_backoff_seconds == 2.5
+    assert calls["ingest_client"].retry_config.initial_backoff_seconds == pytest.approx(0.4)
+    assert calls["ingest_client"].retry_config.max_backoff_seconds == pytest.approx(2.5)
     assert calls["ingest_client"].circuit_breaker_config.failure_threshold == 7
-    assert calls["ingest_client"].circuit_breaker_config.recovery_timeout_seconds == 18.0
+    assert calls["ingest_client"].circuit_breaker_config.recovery_timeout_seconds == pytest.approx(18.0)
     assert calls["dead_letter_writer"] is not None
     assert configured_log_formats == ["json"]
     assert dead_letter_paths == ["simulator/out/dead-letter.jsonl"]

@@ -78,6 +78,57 @@ def _extract_event(line: str) -> EventPayload | None:
     return event
 
 
+_LINE_STOP = "stop"
+_LINE_SENT = "sent"
+_LINE_SKIPPED = "skipped"
+
+
+def _send_or_record(
+    event: EventPayload,
+    stats: dict[str, int],
+    *,
+    dry_run: bool,
+    ingest_client: IngestClient | None,
+) -> None:
+    """Send a parsed event (or simulate, in dry-run) and update stats in place."""
+    if dry_run:
+        stats["events_replayed"] += 1
+        return
+    if ingest_client is None:
+        raise RuntimeError("ingest_client is required when dry_run is False")
+    if ingest_client.send_event(event):
+        stats["events_replayed"] += 1
+    else:
+        stats["events_failed"] += 1
+
+
+def _process_line(
+    line: str,
+    stats: dict[str, int],
+    *,
+    limit: int | None,
+    dry_run: bool,
+    ingest_client: IngestClient | None,
+    logger: logging.Logger,
+) -> str:
+    """Process one dead-letter line; return _LINE_STOP / _LINE_SENT / _LINE_SKIPPED."""
+    if not line.strip():
+        return _LINE_SKIPPED
+    if limit is not None and stats["events_attempted"] >= limit:
+        return _LINE_STOP
+
+    stats["lines_read"] += 1
+    event = _extract_event(line)
+    if event is None:
+        stats["events_malformed"] += 1
+        logger.warning("Skipping malformed dead-letter line index=%d", stats["lines_read"])
+        return _LINE_SKIPPED
+
+    stats["events_attempted"] += 1
+    _send_or_record(event, stats, dry_run=dry_run, ingest_client=ingest_client)
+    return _LINE_SENT
+
+
 def replay_events(
     dead_letter_path: str,
     *,
@@ -106,32 +157,18 @@ def replay_events(
     path = Path(dead_letter_path)
     with path.open("r", encoding="utf-8") as handle:
         for line in handle:
-            if not line.strip():
-                continue
-            if limit is not None and stats["events_attempted"] >= limit:
+            outcome = _process_line(
+                line,
+                stats,
+                limit=limit,
+                dry_run=dry_run,
+                ingest_client=ingest_client,
+                logger=logger,
+            )
+            if outcome == _LINE_STOP:
                 break
-
-            stats["lines_read"] += 1
-            event = _extract_event(line)
-            if event is None:
-                stats["events_malformed"] += 1
-                logger.warning("Skipping malformed dead-letter line index=%d", stats["lines_read"])
-                continue
-
-            stats["events_attempted"] += 1
-            if dry_run:
-                stats["events_replayed"] += 1
-                continue
-
-            if ingest_client is None:
-                raise RuntimeError("ingest_client is required when dry_run is False")
-
-            if ingest_client.send_event(event):
-                stats["events_replayed"] += 1
-            else:
-                stats["events_failed"] += 1
-
-            time.sleep(sleep_interval)
+            if outcome == _LINE_SENT and not dry_run:
+                time.sleep(sleep_interval)
 
     return stats
 
