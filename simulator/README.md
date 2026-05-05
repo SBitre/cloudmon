@@ -146,11 +146,19 @@ All scenarios share the same reliability/logging infrastructure as background si
 
 ### 1) Credential stuffing
 
-Default behavior: 200 `failed_login` events in 30 seconds, sequential IPs, target `login-service`.
+Default behavior (**distributed mode**): 200 `failed_login` events in 30 seconds, spread across sequential IPs (`198.51.100.1`, `198.51.100.2`, …), target `login-service`. Models a botnet-style attack where many IPs each try a small number of logins.
 
 ```bash
 python -m simulator.scenarios.credential_stuffing
 ```
+
+**Centralized mode** (`--single-ip <ipv4>`): every event uses the same source IP. Models a single attacker hammering one account pool — this is the pattern that triggers the `failed_login_burst` detection rule (≥10 failures from one IP in the lookback window).
+
+```bash
+python -m simulator.scenarios.credential_stuffing --count 50 --duration 10 --single-ip 198.51.100.42
+```
+
+Use distributed mode to demonstrate the limits of the current rule (slow + spread-out attacks slip through), and centralized mode to demonstrate the rule firing end-to-end with a Gemini explanation.
 
 ### 2) API error spike
 
@@ -185,7 +193,7 @@ python -m simulator.scenarios.payment_failure_burst --service payment-service --
 
 Scenario-specific extra flags:
 
-- `credential_stuffing`: `--ip-prefix`
+- `credential_stuffing`: `--ip-prefix`, `--single-ip`
 - `error_spike`: `--service`
 - `payment_failure_burst`: `--service`
 
