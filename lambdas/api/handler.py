@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import boto3
+from decimal import Decimal
 from boto3.dynamodb.conditions import Key, Attr
 from datetime import datetime, timedelta, timezone
 
@@ -14,8 +15,19 @@ dynamodb = boto3.resource('dynamodb')
 ALERTS_TABLE = os.environ.get("ALERTS_TABLE_NAME", "cloudmon-alerts")
 EVENTS_TABLE = os.environ.get("EVENTS_TABLE_NAME", "cloudmon-events")
 
+def decimal_default(obj):
+    """
+    JSON encoder for DynamoDB Decimal values.
+    Converts Decimals to int or float so json.dumps doesn't crash.
+    """
+    if isinstance(obj, Decimal):
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
 def make_response(status_code, body):
-    """Helper to build API Gateway responses with CORS support."""
+    """Helper to build API Gateway responses with CORS and Decimal support."""
     return {
         "statusCode": status_code,
         "headers": {
@@ -24,7 +36,8 @@ def make_response(status_code, body):
             "Access-Control-Allow-Methods": "GET, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type",
         },
-        "body": json.dumps(body),
+        # Added decimal_default to handle numeric fields from DynamoDB
+        "body": json.dumps(body, default=decimal_default),
     }
 
 def get_alerts(query_params):
@@ -33,8 +46,6 @@ def get_alerts(query_params):
     table = dynamodb.Table(ALERTS_TABLE)
     
     try:
-        # Since we need recent alerts, we scan or query. 
-        # For small scale, a scan with a manual sort is fine.
         response = table.scan(Limit=limit)
         items = response.get('Items', [])
         
@@ -51,39 +62,31 @@ def get_event_volume(query_params):
     window_param = query_params.get("window", "30m")
     minutes = int(window_param.rstrip("m"))
     
-    # Calculate cutoff time
     now = datetime.now(timezone.utc)
     cutoff_time = (now - timedelta(minutes=minutes)).isoformat().replace("+00:00", "Z")
     
     table = dynamodb.Table(EVENTS_TABLE)
     
     try:
-        # Query events from the last N minutes
-        # Note: In production with high volume, you'd use a GSI on timestamp.
-        # For now, we use scan with a FilterExpression.
         response = table.scan(
             FilterExpression=Attr('timestamp').gte(cutoff_time)
         )
         events = response.get('Items', [])
         
-        # Aggregate by minute: {"2026-05-03T12:01": 5}
         buckets_map = {}
         
-        # Pre-fill buckets with 0 to ensure the chart has no gaps
+        # Pre-fill buckets with 0
         for i in range(minutes, -1, -1):
             t = (now - timedelta(minutes=i)).strftime("%Y-%m-%dT%H:%M")
             buckets_map[t] = 0
 
         for event in events:
-            # Grouping key is YYYY-MM-DDTHH:MM (ignoring seconds)
             minute_key = event['timestamp'][:16]
             if minute_key in buckets_map:
                 buckets_map[minute_key] += 1
             else:
-                # In case an event is slightly outside our pre-filled range
                 buckets_map[minute_key] = 1
 
-        # Format for frontend chart
         formatted_buckets = [
             {"minute": f"{m}:00Z", "count": c} 
             for m, c in sorted(buckets_map.items())
