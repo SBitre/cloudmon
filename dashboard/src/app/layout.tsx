@@ -23,10 +23,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
   return (
-    <html lang="en" className="bg-zinc-950">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased text-zinc-100`}>
-        {children}
-      </body>
+    <html lang="en" className="dark">
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>{children}</body>
     </html>
   );
 }

@@ -1,43 +1,90 @@
+import type { ReactNode } from "react";
+
+import { Icons } from "@/components/ui/icons";
+import { Pill } from "@/components/ui/pill";
+
 /**
- * Small presentational primitive that renders an API query result in a
- * consistent loading / error / data layout.
+ * Section shell for a live data panel.
  *
- * Phase 1 only: this is intentionally raw JSON output to prove the wiring
- * end-to-end. Later phases replace the `<pre>` with proper visualizations
- * (chart for volume, alert cards for alerts).
+ * Owns the loading / refreshing / error / empty plumbing so every panel on
+ * the page shares the same visual rhythm. The body content is delegated to
+ * the caller via `children` — one shell, many bodies (chart, alert list,
+ * raw JSON, future widgets).
  */
-interface ApiResultPanelProps<T> {
+interface ApiResultPanelProps {
   readonly title: string;
   readonly endpoint: string;
-  readonly data: T | undefined;
-  readonly error: Error | undefined;
+  readonly hasError: boolean;
+  readonly errorMessage?: string;
   readonly isLoading: boolean;
   readonly isValidating: boolean;
+  readonly isEmpty?: boolean;
+  readonly emptyMessage?: string;
+  readonly children?: ReactNode;
 }
 
-export function ApiResultPanel<T>(props: ApiResultPanelProps<T>): React.JSX.Element {
-  const { title, endpoint, data, error, isLoading, isValidating } = props;
+export function ApiResultPanel(props: ApiResultPanelProps): React.JSX.Element {
+  const {
+    title,
+    endpoint,
+    hasError,
+    errorMessage,
+    isLoading,
+    isValidating,
+    isEmpty,
+    emptyMessage,
+    children,
+  } = props;
 
   return (
-    <section className="rounded-lg border border-zinc-800 bg-zinc-950 p-5">
-      <header className="mb-3 flex items-baseline justify-between gap-3">
+    <section className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/40 backdrop-blur-sm">
+      <header className="flex items-baseline justify-between gap-3 border-b border-zinc-800/80 bg-zinc-900/40 px-5 py-3">
         <div>
-          <h2 className="text-base font-semibold text-zinc-100">{title}</h2>
-          <p className="font-mono text-xs text-zinc-500">{endpoint}</p>
+          <h2 className="text-sm font-semibold tracking-tight text-zinc-100">{title}</h2>
+          <p className="font-mono text-[11px] text-zinc-500">{endpoint}</p>
         </div>
-        <StatusPill isLoading={isLoading} isValidating={isValidating} hasError={Boolean(error)} />
+        <StatusPill isLoading={isLoading} isValidating={isValidating} hasError={hasError} />
       </header>
 
-      {error ? (
-        <p className="rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
-          {error.message}
-        </p>
-      ) : (
-        <pre className="max-h-[420px] overflow-auto rounded bg-black/40 p-3 font-mono text-xs leading-relaxed text-zinc-300">
-          {data ? JSON.stringify(data, null, 2) : "// awaiting first response..."}
-        </pre>
-      )}
+      <div className="cloudmon-fade-in p-5" key={`${hasError}-${isEmpty}`}>
+        {hasError ? (
+          <ErrorBlock message={errorMessage} />
+        ) : (
+          <ResultBody isEmpty={isEmpty} emptyMessage={emptyMessage}>
+            {children}
+          </ResultBody>
+        )}
+      </div>
     </section>
+  );
+}
+
+interface ResultBodyProps {
+  readonly isEmpty?: boolean;
+  readonly emptyMessage?: string;
+  readonly children?: ReactNode;
+}
+
+function ResultBody({ isEmpty, emptyMessage, children }: ResultBodyProps): React.JSX.Element {
+  if (isEmpty) {
+    const Inbox = Icons.empty;
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/30 px-4 py-10 text-center">
+        <Inbox className="h-6 w-6 text-zinc-600" aria-hidden strokeWidth={1.75} />
+        <p className="text-sm text-zinc-400">{emptyMessage ?? "No data yet."}</p>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
+function ErrorBlock({ message }: { readonly message?: string }): React.JSX.Element {
+  const Triangle = Icons.error;
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-red-900/60 bg-red-950/30 p-4">
+      <Triangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden strokeWidth={2.25} />
+      <p className="text-sm text-red-200">{message ?? "Request failed."}</p>
+    </div>
   );
 }
 
@@ -49,30 +96,13 @@ interface StatusPillProps {
 
 function StatusPill({ isLoading, isValidating, hasError }: StatusPillProps): React.JSX.Element {
   if (hasError) {
-    return <Pill tone="red" label="error" />;
+    return <Pill tone="red" label="error" icon={Icons.error} />;
   }
   if (isLoading) {
     return <Pill tone="zinc" label="loading" />;
   }
   if (isValidating) {
-    return <Pill tone="amber" label="refreshing" />;
+    return <Pill tone="amber" label="refreshing" icon={Icons.refresh} />;
   }
-  return <Pill tone="emerald" label="live" />;
-}
-
-const PILL_TONES = {
-  red: "border-red-900 bg-red-950/60 text-red-300",
-  amber: "border-amber-900 bg-amber-950/60 text-amber-300",
-  emerald: "border-emerald-900 bg-emerald-950/60 text-emerald-300",
-  zinc: "border-zinc-800 bg-zinc-900 text-zinc-400",
-} as const;
-
-function Pill({ tone, label }: { tone: keyof typeof PILL_TONES; label: string }): React.JSX.Element {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${PILL_TONES[tone]}`}
-    >
-      {label}
-    </span>
-  );
+  return <Pill tone="emerald" label="live" dot pulse />;
 }
