@@ -1,6 +1,10 @@
 # CloudMon — Real-Time Cloud Event Monitoring with AI Explanations
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Terraform](https://img.shields.io/badge/Terraform-%E2%89%A51.0-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/AWS-Lambda%20%7C%20DynamoDB%20%7C%20API%20Gateway-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-React-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 
 A real-time cloud event monitoring and anomaly detection system on AWS, with an AI-powered explanation layer using Gemini. Course project for [Course Name], [Semester].
 
