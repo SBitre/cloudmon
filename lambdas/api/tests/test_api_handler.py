@@ -124,3 +124,39 @@ def test_route_not_found(aws_credentials):
     event = {"routeKey": "GET /unknown"}
     response = lambda_handler(event, None)
     assert response["statusCode"] == 404
+
+def test_get_alerts_with_decimal_values(dynamodb_setup):
+    """
+    Scenario: Alerts table contains Decimal types (common in DynamoDB).
+    Expected: The handler serializes them to JSON without 500 error.
+    """
+    from lambdas.api.handler import lambda_handler
+    from decimal import Decimal
+    
+    table = dynamodb_setup.Table(ALERTS_TABLE)
+    # Adding an alert with a numeric field (Decimal)
+    table.put_item(Item={
+        "alert_id": "alert-with-numbers",
+        "timestamp": "2026-05-03T12:00:00Z",
+        "service": "payment-service",
+        "severity": "error",
+        "status_code": Decimal("504"),
+        "latency": Decimal("1500.50")
+    })
+
+    event = {
+        "routeKey": "GET /alerts",
+        "queryStringParameters": {}
+    }
+    
+    response = lambda_handler(event, None)
+    assert response["statusCode"] == 200
+    
+    body = json.loads(response["body"])
+    alert = body["alerts"][0]
+    
+    # Check if Decimals were correctly converted to int/float
+    assert alert["status_code"] == 504
+    assert isinstance(alert["status_code"], int)
+    assert alert["latency"] == 1500.5
+    assert isinstance(alert["latency"], float)
