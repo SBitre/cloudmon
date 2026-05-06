@@ -89,6 +89,31 @@ def generate_ai_explanation(alert):
             "recommended_actions": alert["recommended_actions"]
         }
 
+def severity_for_failed_logins(count):
+    if count >= 50:
+        return "critical"
+    if count >= 25:
+        return "error"
+    if count >= 10:
+        return "warning"
+    return "info"
+
+
+def severity_for_api_errors(count):
+    if count >= 30:
+        return "critical"
+    if count >= 15:
+        return "error"
+    return "warning"
+
+
+def severity_for_payment_failures(count):
+    if count >= 20:
+        return "critical"
+    if count >= 10:
+        return "error"
+    return "warning"       
+
 def detect_anomalies(events):
     alerts = []
 
@@ -117,7 +142,7 @@ def detect_anomalies(events):
                 "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "service": triggering_events[0].get("service", "login-service"),
                 "anomaly_type": "failed_login_burst",
-                "severity": "critical",
+                "severity": severity_for_failed_logins(len(triggering_events)),
                 "explanation": f"{len(triggering_events)} failed login attempts detected from IP {ip_address}.",
                 "recommended_actions": [
                     "Review authentication logs for brute force activity.",
@@ -133,7 +158,7 @@ def detect_anomalies(events):
                 "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "service": service,
                 "anomaly_type": "api_error_spike",
-                "severity": "warning",
+                "severity": severity_for_api_errors(len(triggering_events)),
                 "explanation": f"{len(triggering_events)} API error events detected for {service}.",
                 "recommended_actions": [
                     "Check recent deployments or service health.",
@@ -149,7 +174,7 @@ def detect_anomalies(events):
                 "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "service": service,
                 "anomaly_type": "payment_failure_burst",
-                "severity": "critical",
+                "severity": severity_for_payment_failures(len(triggering_events)),
                 "explanation": f"{len(triggering_events)} payment failures detected for {service}.",
                 "recommended_actions": [
                     "Check payment provider status.",
