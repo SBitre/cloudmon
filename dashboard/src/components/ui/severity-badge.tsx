@@ -1,19 +1,20 @@
 /**
  * Severity-specific badge with a leading icon.
  *
- * Centralizing the `Severity → tone + icon` mapping here means every surface
- * (chart, alert cards, triggering events table) shows the same visual for the
- * same severity, with no per-component styling drift.
+ * Centralizes the `Severity → tone + icon` mapping so every surface
+ * (chart, alert cards, triggering events table) shows the same visual.
+ * The pill tones map onto semantic theme tokens so light/dark flips
+ * preserve the contrast and intent.
  */
 import { Pill, type PillTone } from "@/components/ui/pill";
 import { severityIcon } from "@/components/ui/icons";
 import type { Severity } from "@/lib/types/api";
 
 const SEVERITY_TONE: Readonly<Record<Severity, PillTone>> = {
-  info: "blue",
-  warning: "amber",
-  error: "orange",
-  critical: "red",
+  info: "info",
+  warning: "warning",
+  error: "error",
+  critical: "critical",
 };
 
 interface SeverityBadgeProps {

@@ -8,26 +8,52 @@ import type { LucideIcon } from "lucide-react";
  *   - `pulse` — combine with `dot` to animate the dot.
  *   - `icon`  — leading lucide icon (use for severity / typed labels).
  *
- * One component, many uses; keeps the dashboard's visual language tight.
+ * Tones map to the semantic theme tokens declared in `globals.css`, so
+ * the same Pill renders correctly in both light and dark themes without
+ * per-tone overrides.
  */
-export type PillTone = "red" | "amber" | "emerald" | "zinc" | "blue" | "orange";
+export type PillTone =
+  | "neutral"
+  | "accent"
+  | "info"
+  | "warning"
+  | "error"
+  | "critical";
 
-const PILL_CLASSES: Readonly<Record<PillTone, string>> = {
-  red: "border-red-500/30 bg-red-500/10 text-red-300",
-  amber: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-  emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-  zinc: "border-zinc-700/60 bg-zinc-800/60 text-zinc-300",
-  blue: "border-blue-500/30 bg-blue-500/10 text-blue-300",
-  orange: "border-orange-500/30 bg-orange-500/10 text-orange-300",
+const PILL_BG: Readonly<Record<PillTone, string>> = {
+  neutral: "bg-surface-elevated",
+  accent: "bg-[color:var(--color-accent-soft)]",
+  info: "bg-[color:var(--color-info-soft)]",
+  warning: "bg-[color:var(--color-warning-soft)]",
+  error: "bg-[color:var(--color-error-soft)]",
+  critical: "bg-[color:var(--color-critical-soft)]",
 };
 
-const DOT_CLASSES: Readonly<Record<PillTone, string>> = {
-  red: "bg-red-400",
-  amber: "bg-amber-400",
-  emerald: "bg-emerald-400",
-  zinc: "bg-zinc-400",
-  blue: "bg-blue-400",
-  orange: "bg-orange-400",
+const PILL_BORDER: Readonly<Record<PillTone, string>> = {
+  neutral: "border-stroke",
+  accent: "border-[color:var(--color-accent)]/30",
+  info: "border-[color:var(--color-info)]/35",
+  warning: "border-[color:var(--color-warning)]/35",
+  error: "border-[color:var(--color-error)]/35",
+  critical: "border-[color:var(--color-critical)]/45",
+};
+
+const PILL_TEXT: Readonly<Record<PillTone, string>> = {
+  neutral: "text-fg-muted",
+  accent: "text-[color:var(--color-accent-fg)]",
+  info: "text-[color:var(--color-info)]",
+  warning: "text-[color:var(--color-warning)]",
+  error: "text-[color:var(--color-error)]",
+  critical: "text-[color:var(--color-critical)]",
+};
+
+const DOT_BG: Readonly<Record<PillTone, string>> = {
+  neutral: "bg-fg-subtle",
+  accent: "bg-accent",
+  info: "bg-[color:var(--color-info)]",
+  warning: "bg-[color:var(--color-warning)]",
+  error: "bg-[color:var(--color-error)]",
+  critical: "bg-[color:var(--color-critical)]",
 };
 
 interface PillProps {
@@ -41,11 +67,11 @@ interface PillProps {
 export function Pill({ tone, label, dot, pulse, icon: Icon }: PillProps): React.JSX.Element {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide transition-colors ${PILL_CLASSES[tone]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide transition-colors ${PILL_BG[tone]} ${PILL_BORDER[tone]} ${PILL_TEXT[tone]}`}
     >
       {dot ? (
         <span
-          className={`h-1.5 w-1.5 rounded-full ${DOT_CLASSES[tone]} ${pulse ? "cloudmon-pulse" : ""}`}
+          className={`h-1.5 w-1.5 rounded-full ${DOT_BG[tone]} ${pulse ? "cloudmon-pulse" : ""}`}
           aria-hidden
         />
       ) : null}

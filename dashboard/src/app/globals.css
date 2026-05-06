@@ -1,58 +1,160 @@
 @import "tailwindcss";
 
 /*
- * Foundation tokens for CloudMon dashboard.
+ * CloudMon dashboard theme tokens.
  *
- * Single emerald accent. Strict zinc grayscale base. No gradients except for
- * the very subtle ambient radial on body, which gives the whole page a sense
- * of depth without crossing into garish territory.
+ * Semantic names that map to different CSS values per theme. Components
+ * never reference colors like `zinc-950` directly; they use utility classes
+ * like `bg-surface`, `text-fg-muted`, `border-stroke`. This keeps the visual
+ * language consistent and makes the dark/light flip a one-line change here
+ * instead of a sweep through every component.
+ *
+ * The :root defaults are the LIGHT theme. The `.dark` selector overrides
+ * with the dark palette. `next-themes` flips the `class="dark"` on <html>
+ * based on user preference, with `system` falling back to OS preference.
  */
+
+/* Light theme (default). */
 :root {
-  --color-bg-base: #09090b;        /* zinc-950 */
-  --color-bg-elevated: #18181b;    /* zinc-900 */
-  --color-bg-subtle: #1f1f23;
-  --color-stroke: #27272a;         /* zinc-800 */
-  --color-stroke-soft: #1f1f23;
+  --color-surface-base: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f8fafc;
+  --color-surface-subtle: #f1f5f9;
+  --color-surface-overlay: rgba(255, 255, 255, 0.85);
 
-  --color-text-primary: #fafafa;
-  --color-text-secondary: #a1a1aa;
-  --color-text-tertiary: #71717a;
+  --color-stroke: #e4e4e7;
+  --color-stroke-soft: #f1f5f9;
 
-  --color-accent: #10b981;
-  --color-accent-soft: rgba(16, 185, 129, 0.15);
-  --color-accent-ring: rgba(16, 185, 129, 0.45);
+  --color-fg: #18181b;
+  --color-fg-muted: #52525b;
+  --color-fg-subtle: #71717a;
 
-  color-scheme: dark;
+  --color-accent: #059669;
+  --color-accent-hover: #047857;
+  --color-accent-soft: rgba(16, 185, 129, 0.12);
+  --color-accent-ring: rgba(16, 185, 129, 0.4);
+  --color-accent-fg: #065f46;
+
+  /* Status accents — same names in both themes, different values. */
+  --color-info: #2563eb;
+  --color-info-soft: rgba(37, 99, 235, 0.1);
+  --color-warning: #b45309;
+  --color-warning-soft: rgba(180, 83, 9, 0.12);
+  --color-error: #c2410c;
+  --color-error-soft: rgba(194, 65, 12, 0.1);
+  --color-critical: #b91c1c;
+  --color-critical-soft: rgba(185, 28, 28, 0.1);
+
+  --shadow-elevation-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-elevation-md: 0 6px 24px rgba(15, 23, 42, 0.06);
+
+  /* Background ambient gradient — different intensity per theme. */
+  --ambient-glow:
+    radial-gradient(1100px 520px at 50% -8%, rgba(16, 185, 129, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 100% 100%, rgba(99, 102, 241, 0.05), transparent 70%);
 }
 
+.dark {
+  --color-surface-base: #09090b;
+  --color-surface: #18181b;
+  --color-surface-elevated: #1f1f23;
+  --color-surface-subtle: #27272a;
+  --color-surface-overlay: rgba(9, 9, 11, 0.85);
+
+  --color-stroke: #27272a;
+  --color-stroke-soft: #1f1f23;
+
+  --color-fg: #fafafa;
+  --color-fg-muted: #a1a1aa;
+  --color-fg-subtle: #71717a;
+
+  --color-accent: #10b981;
+  --color-accent-hover: #34d399;
+  --color-accent-soft: rgba(16, 185, 129, 0.15);
+  --color-accent-ring: rgba(16, 185, 129, 0.45);
+  --color-accent-fg: #6ee7b7;
+
+  --color-info: #60a5fa;
+  --color-info-soft: rgba(96, 165, 250, 0.12);
+  --color-warning: #fbbf24;
+  --color-warning-soft: rgba(251, 191, 36, 0.12);
+  --color-error: #fb923c;
+  --color-error-soft: rgba(251, 146, 60, 0.12);
+  --color-critical: #f87171;
+  --color-critical-soft: rgba(248, 113, 113, 0.14);
+
+  --shadow-elevation-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-elevation-md: 0 14px 40px rgba(0, 0, 0, 0.45);
+
+  --ambient-glow:
+    radial-gradient(1200px 600px at 50% -10%, rgba(16, 185, 129, 0.06), transparent 60%),
+    radial-gradient(900px 500px at 100% 100%, rgba(99, 102, 241, 0.04), transparent 70%);
+}
+
+/*
+ * Tailwind v4: surface these tokens as utility classes (bg-surface,
+ * text-fg-muted, border-stroke, ring-accent, etc.). Any component that
+ * uses `bg-zinc-950` should be rewritten to use these instead so dark/
+ * light themes stay coherent.
+ */
 @theme inline {
-  --color-background: var(--color-bg-base);
-  --color-foreground: var(--color-text-primary);
+  --color-surface-base: var(--color-surface-base);
+  --color-surface: var(--color-surface);
+  --color-surface-elevated: var(--color-surface-elevated);
+  --color-surface-subtle: var(--color-surface-subtle);
+  --color-surface-overlay: var(--color-surface-overlay);
+
+  --color-stroke: var(--color-stroke);
+  --color-stroke-soft: var(--color-stroke-soft);
+
+  --color-fg: var(--color-fg);
+  --color-fg-muted: var(--color-fg-muted);
+  --color-fg-subtle: var(--color-fg-subtle);
+
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-accent-ring: var(--color-accent-ring);
+  --color-accent-fg: var(--color-accent-fg);
+
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-error: var(--color-error);
+  --color-error-soft: var(--color-error-soft);
+  --color-critical: var(--color-critical);
+  --color-critical-soft: var(--color-critical-soft);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 html {
-  background: var(--color-bg-base);
+  background: var(--color-surface-base);
+  color-scheme: light dark;
 }
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(16, 185, 129, 0.06), transparent 60%),
-    radial-gradient(900px 500px at 100% 100%, rgba(99, 102, 241, 0.04), transparent 70%),
-    var(--color-bg-base);
+  background: var(--ambient-glow), var(--color-surface-base);
   background-attachment: fixed;
-  color: var(--color-text-primary);
+  color: var(--color-fg);
   font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
+/* Smooth color transitions during theme flips. */
+:root,
+.dark {
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
 ::selection {
   background: var(--color-accent-soft);
-  color: var(--color-text-primary);
+  color: var(--color-fg);
 }
 
 /* Pulse keyframe used by the "live" status dot. */
@@ -71,7 +173,7 @@ body {
   animation: cloudmon-pulse 1.6s ease-in-out infinite;
 }
 
-/* Soft enter animation for newly-mounted blocks (empty/error/data swaps). */
+/* Soft enter animation for newly-mounted blocks. */
 @keyframes cloudmon-fade-in {
   from {
     opacity: 0;
@@ -87,7 +189,27 @@ body {
   animation: cloudmon-fade-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Tabular numerics align nicely in tables and the chart. */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* Skip link styled for both themes. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -40px;
+  z-index: 50;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  background: var(--color-accent);
+  color: white;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: top 150ms ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+  outline: 2px solid var(--color-accent-ring);
+  outline-offset: 2px;
 }

@@ -14,10 +14,17 @@ import {
   ChevronRight,
   Inbox,
   Info,
+  Loader2,
+  Monitor,
+  Moon,
+  Play,
   RefreshCw,
+  Settings as SettingsIcon,
   ShieldAlert,
   Sparkles,
+  Sun,
   TriangleAlert,
+  Zap,
 } from "lucide-react";
 
 import type { Severity } from "@/lib/types/api";
@@ -34,12 +41,21 @@ export const Icons = {
   ai: Sparkles,
   bot: Bot,
 
+  // Theme
+  sun: Sun,
+  moon: Moon,
+  monitor: Monitor,
+
   // Affordances
   refresh: RefreshCw,
   expand: ChevronDown,
   collapse: ChevronRight,
   empty: Inbox,
   ok: CheckCircle2,
+  fire: Zap,
+  play: Play,
+  spinner: Loader2,
+  settings: SettingsIcon,
 } as const;
 
 const SEVERITY_ICON_KEY: Readonly<Record<Severity, keyof typeof Icons>> = {
