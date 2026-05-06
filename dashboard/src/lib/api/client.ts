@@ -2,47 +2,76 @@
  * Strongly-typed HTTP client for the CloudMon read API.
  *
  * Responsibilities:
- * - Compose URLs from the configured base URL.
- * - Apply a per-request timeout via `AbortController`.
- * - Surface non-2xx responses as a domain-specific `ApiError` so consumers
- *   (hooks, components, error boundaries) can distinguish HTTP failures from
- *   network failures and JSON-parse failures.
+ *   1. Compose URLs from the configured base URL.
+ *   2. Apply a per-request timeout via `AbortController`.
+ *   3. Surface non-2xx, network, and JSON-parse failures as a domain
+ *      `ApiError` with stable error codes the UI can branch on.
+ *   4. Validate every successful response against a Zod schema; reject
+ *      malformed payloads as `ApiError` with code `invalid_payload`.
  *
- * This module deliberately knows nothing about React or SWR; that allows it
- * to be unit-tested in isolation and reused from server components, route
- * handlers, or scripts.
+ * This module deliberately knows nothing about React or SWR; that allows
+ * it to be unit-tested in isolation and reused from server components,
+ * route handlers, or scripts.
  */
+import type { ZodSchema } from "zod";
+
 import { REQUEST_TIMEOUT_MS, getApiBaseUrl } from "@/lib/config";
-import type { AlertsResponse, EventsVolumeResponse } from "@/lib/types/api";
+import {
+  AlertsResponseSchema,
+  EventsVolumeResponseSchema,
+  type AlertsResponse,
+  type EventsVolumeResponse,
+} from "@/lib/types/schemas";
+
+export type ApiErrorCode =
+  | "network"
+  | "timeout"
+  | "http"
+  | "invalid_json"
+  | "invalid_payload"
+  | "config";
 
 /**
- * Error thrown for any non-2xx response or network failure.
- *
- * `status` is `0` when the request never produced a response (network error,
- * timeout, CORS rejection, etc.); otherwise it carries the HTTP status code.
+ * Domain error for the read-API client. Fields are stable so consumers
+ * (panels, error boundaries, telemetry) can branch on them.
  */
 export class ApiError extends Error {
+  public readonly code: ApiErrorCode;
   public readonly status: number;
   public readonly path: string;
+  public readonly cause?: unknown;
 
-  constructor(message: string, status: number, path: string) {
-    super(message);
+  constructor(params: {
+    message: string;
+    code: ApiErrorCode;
+    status: number;
+    path: string;
+    cause?: unknown;
+  }) {
+    super(params.message);
     this.name = "ApiError";
-    this.status = status;
-    this.path = path;
+    this.code = params.code;
+    this.status = params.status;
+    this.path = params.path;
+    this.cause = params.cause;
   }
 }
 
-/**
- * Internal fetch helper with timeout + JSON decoding + error normalization.
- *
- * Generic over the expected response payload `T`. The caller is responsible
- * for picking the correct type; runtime shape validation is intentionally
- * out of scope here (the read API contract is enforced by the schema doc and
- * the Lambda's tests).
- */
-async function getJson<T>(path: string): Promise<T> {
-  const url = `${getApiBaseUrl()}${path}`;
+async function getJson<T>(path: string, schema: ZodSchema<T>): Promise<T> {
+  let baseUrl: string;
+  try {
+    baseUrl = getApiBaseUrl();
+  } catch (cause) {
+    throw new ApiError({
+      message: cause instanceof Error ? cause.message : "missing API base URL",
+      code: "config",
+      status: 0,
+      path,
+      cause,
+    });
+  }
+
+  const url = `${baseUrl}${path}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -56,33 +85,59 @@ async function getJson<T>(path: string): Promise<T> {
     });
   } catch (cause) {
     clearTimeout(timer);
-    const message = cause instanceof Error ? cause.message : "network error";
-    throw new ApiError(`Request to ${path} failed: ${message}`, 0, path);
+    const isAbort =
+      cause instanceof DOMException && cause.name === "AbortError";
+    throw new ApiError({
+      message: isAbort
+        ? `Request to ${path} timed out after ${REQUEST_TIMEOUT_MS}ms`
+        : `Request to ${path} failed: ${cause instanceof Error ? cause.message : "network error"}`,
+      code: isAbort ? "timeout" : "network",
+      status: 0,
+      path,
+      cause,
+    });
   }
   clearTimeout(timer);
 
   if (!response.ok) {
-    throw new ApiError(
-      `Request to ${path} failed with HTTP ${response.status}`,
-      response.status,
+    throw new ApiError({
+      message: `Request to ${path} failed with HTTP ${response.status}`,
+      code: "http",
+      status: response.status,
       path,
-    );
+    });
   }
 
+  let raw: unknown;
   try {
-    return (await response.json()) as T;
+    raw = await response.json();
   } catch (cause) {
-    const message = cause instanceof Error ? cause.message : "invalid JSON";
-    throw new ApiError(`Response from ${path} was not valid JSON: ${message}`, response.status, path);
+    throw new ApiError({
+      message: `Response from ${path} was not valid JSON`,
+      code: "invalid_json",
+      status: response.status,
+      path,
+      cause,
+    });
   }
+
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) {
+    throw new ApiError({
+      message: `Response from ${path} did not match schema (${parsed.error.issues.length} issue${parsed.error.issues.length === 1 ? "" : "s"})`,
+      code: "invalid_payload",
+      status: response.status,
+      path,
+      cause: parsed.error,
+    });
+  }
+  return parsed.data;
 }
 
-/** Fetch the per-minute event volume buckets from `GET /events/volume`. */
 export function fetchEventsVolume(): Promise<EventsVolumeResponse> {
-  return getJson<EventsVolumeResponse>("/events/volume");
+  return getJson("/events/volume", EventsVolumeResponseSchema);
 }
 
-/** Fetch the most recent alerts from `GET /alerts`. */
 export function fetchAlerts(): Promise<AlertsResponse> {
-  return getJson<AlertsResponse>("/alerts");
+  return getJson("/alerts", AlertsResponseSchema);
 }
