@@ -6,6 +6,19 @@
  * produced by the read API.
  */
 
+/**
+ * Current time as ISO 8601 UTC with `Z` suffix and millisecond precision.
+ *
+ * Millisecond precision matters for DynamoDB: the `cloudmon-events` table
+ * is keyed `(service, timestamp)`, so second-precision timestamps cause
+ * silent overwrites when the dashboard fires multiple events per second
+ * at the same service. The Python simulator uses microsecond precision
+ * via `datetime.now(...).isoformat()` for the same reason.
+ */
+export function utcNowIso8601(): string {
+  return new Date().toISOString();
+}
+
 /** Format an ISO timestamp as a short local-time `HH:MM` label. */
 export function formatHourMinute(iso: string): string {
   const date = new Date(iso);
