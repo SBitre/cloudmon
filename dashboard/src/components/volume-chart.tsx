@@ -13,6 +13,7 @@ import {
 } from "recharts";
 
 import { formatHourMinute, formatLocalDateTime } from "@/lib/format/time";
+import { useSettings } from "@/lib/store/settings";
 import type { VolumeBucket } from "@/lib/types/api";
 
 /**
@@ -20,33 +21,48 @@ import type { VolumeBucket } from "@/lib/types/api";
  *
  * - Last `windowMinutes` buckets only, so the chart stays readable as the
  *   API window grows.
- * - Most-recent bar is rendered with a brighter emerald fill to draw the eye
- *   to the live edge.
- * - X-axis is local-time `HH:MM`; tooltip shows full local datetime.
- * - Empty / loading framing is owned by the surrounding `ApiResultPanel`.
+ * - Most-recent bar is rendered with a brighter fill to draw the eye to the
+ *   live edge.
+ * - Tooltip and axes use CSS custom properties so the chart chrome flips
+ *   automatically with the theme; the bar gradient stays emerald in both
+ *   themes (accent color is consistent across modes by design).
  */
 interface VolumeChartProps {
   readonly buckets: readonly VolumeBucket[];
+  /** Optional override; falls back to the user's `volumeWindowMinutes` setting. */
   readonly windowMinutes?: number;
 }
 
-const FILL_LIVE = "#34d399";
-const FILL_HISTORY = "#10b981";
+const FILL_LIVE = "var(--color-accent-hover)";
+const FILL_HISTORY = "var(--color-accent)";
 
-export function VolumeChart({ buckets, windowMinutes = 30 }: VolumeChartProps): React.JSX.Element {
-  const visible = useMemo(() => buckets.slice(-windowMinutes), [buckets, windowMinutes]);
+export function VolumeChart({ buckets, windowMinutes }: VolumeChartProps): React.JSX.Element {
+  const settingWindow = useSettings((s) => s.volumeWindowMinutes);
+  const effectiveWindow = windowMinutes ?? settingWindow;
+  const visible = useMemo(() => buckets.slice(-effectiveWindow), [buckets, effectiveWindow]);
   const total = useMemo(() => visible.reduce((sum, bucket) => sum + bucket.count, 0), [visible]);
   const peak = useMemo(() => visible.reduce((max, b) => (b.count > max ? b.count : max), 0), [visible]);
   const latest = visible.length > 0 ? visible[visible.length - 1] : undefined;
+  const apiCapped = visible.length < effectiveWindow;
+  const windowLabel = apiCapped
+    ? `${visible.length} / ${effectiveWindow} min`
+    : `${visible.length} min`;
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-baseline gap-x-6 gap-y-1">
-        <Stat label="Window" value={`${visible.length} min`} />
+        <Stat label="Window" value={windowLabel} />
         <Stat label="Events" value={String(total)} accent />
         <Stat label="Peak / min" value={String(peak)} />
         {latest ? <Stat label="Now" value={String(latest.count)} mono /> : null}
       </div>
+
+      {apiCapped ? (
+        <p className="-mt-1 mb-3 font-mono text-[11px] text-fg-subtle">
+          Read API returned {visible.length} min of buckets; pick a smaller window or
+          extend the API to surface the full {effectiveWindow}-minute history.
+        </p>
+      ) : null}
 
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -61,35 +77,36 @@ export function VolumeChart({ buckets, windowMinutes = 30 }: VolumeChartProps): 
                 <stop offset="100%" stopColor={FILL_LIVE} stopOpacity={0.7} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="#27272a" strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid stroke="var(--color-stroke)" strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="minute"
               tickFormatter={formatHourMinute}
-              stroke="#3f3f46"
-              tick={{ fill: "#a1a1aa", fontSize: 11 }}
+              stroke="var(--color-stroke)"
+              tick={{ fill: "var(--color-fg-muted)", fontSize: 11 }}
               tickLine={false}
               axisLine={false}
               minTickGap={24}
             />
             <YAxis
               allowDecimals={false}
-              stroke="#3f3f46"
-              tick={{ fill: "#a1a1aa", fontSize: 11 }}
+              stroke="var(--color-stroke)"
+              tick={{ fill: "var(--color-fg-muted)", fontSize: 11 }}
               tickLine={false}
               axisLine={false}
               width={32}
             />
             <Tooltip
-              cursor={{ fill: "rgba(63, 63, 70, 0.25)" }}
+              cursor={{ fill: "var(--color-surface-subtle)", fillOpacity: 0.5 }}
               contentStyle={{
-                background: "#09090b",
-                border: "1px solid #27272a",
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-stroke)",
                 borderRadius: 8,
                 fontSize: 12,
                 padding: "6px 10px",
+                color: "var(--color-fg)",
               }}
-              labelStyle={{ color: "#e4e4e7", marginBottom: 2 }}
-              itemStyle={{ color: "#34d399" }}
+              labelStyle={{ color: "var(--color-fg)", marginBottom: 2 }}
+              itemStyle={{ color: "var(--color-accent)" }}
               labelFormatter={(label) => formatLocalDateTime(String(label))}
               formatter={(value) => [String(value), "events"]}
             />
@@ -118,9 +135,9 @@ interface StatProps {
 function Stat({ label, value, accent, mono }: StatProps): React.JSX.Element {
   return (
     <div className="flex items-baseline gap-2">
-      <span className="font-mono text-[10px] uppercase tracking-wide text-zinc-500">{label}</span>
+      <span className="font-mono text-[10px] uppercase tracking-wide text-fg-subtle">{label}</span>
       <span
-        className={`tabular-nums ${mono ? "font-mono" : "font-semibold"} ${accent ? "text-emerald-300" : "text-zinc-100"}`}
+        className={`tabular-nums ${mono ? "font-mono" : "font-semibold"} ${accent ? "text-[color:var(--color-accent-fg)]" : "text-fg"}`}
       >
         {value}
       </span>
