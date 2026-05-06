@@ -11,8 +11,10 @@ Next.js 15 frontend that visualizes the CloudMon read API: live event volume and
 | Framework | Next.js 15 (App Router) | SSG/ISR friendly, modern React 19 server-component story |
 | Language | TypeScript (strict) | Wire-level types match `docs/event-schema.md` |
 | Styling | Tailwind CSS v4 | Zero-runtime, utility-first, tiny bundle |
+| Theming | `next-themes` | System / light / dark with persistence; OS preference respected |
 | Data fetching | SWR | Stale-while-revalidate, auto-pause on tab blur, errors keep last good data |
-| Charts (phase 2) | Recharts | Composable, declarative, plays well with React 19 |
+| Charts | Recharts | Composable, declarative, plays well with React 19 |
+| Icons | lucide-react | Tree-shaken; ~3 KB per imported icon |
 
 ## Project layout
 
@@ -86,6 +88,7 @@ npm run lint     # eslint via next/core-web-vitals + typescript-eslint
 | Name | Required | Description |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | yes | Base URL of the deployed read API (no trailing slash) |
+| `NEXT_PUBLIC_INGEST_URL` | optional | Full URL of the ingest endpoint (`.../events`). When set, the in-page Trigger Scenario menu becomes active and posts events directly from the browser. The Lambda allows `Origin: *` so this works without infra changes. |
 
 `NEXT_PUBLIC_*` variables are inlined at build time and are visible in the browser bundle by design. Do **not** put secrets here.
 
@@ -125,8 +128,20 @@ The dashboard consumes two read-only endpoints; both are documented in `docs/eve
 - Refetches immediately on tab focus and network reconnect.
 - A failed poll keeps the last successful payload visible — the dashboard never blanks out mid-demo because of a transient hiccup.
 
+## Accessibility
+
+- Skip-to-content link for keyboard users (visible on focus).
+- Semantic landmarks (`<header>`, `<main>`, `<footer>`, `<section aria-label>`).
+- Alerts panel has `aria-live="polite"` so screen readers announce new alerts as they arrive.
+- All interactive controls (theme toggle, scenario picker, triggering-events disclosure) have visible focus rings using the accent ring token, plus accessible names via `aria-label` or button text.
+- Severity is communicated by both color and icon, never by color alone.
+
+## Theming
+
+Three modes: **System** (default — follows OS preference), **Light**, **Dark**. Toggle in the header cycles through them; the choice is persisted via `next-themes` (`localStorage`). Components consume semantic tokens (`bg-surface`, `text-fg-muted`, `border-stroke`, etc.) so palette tweaks live in one place — `src/app/globals.css`.
+
 ## Roadmap
 
-- **Phase 1 (this PR)** — wiring + raw JSON.
-- **Phase 2** — Recharts bar chart for `/events/volume`, alert cards with severity colors and Gemini explanation, empty state.
-- **Phase 3 (optional)** — header "live" indicator, "Trigger demo scenario" button.
+- **Phase 1** — typed data layer + wiring (raw JSON view).
+- **Phase 2** — Recharts volume chart, alert cards with severity icons + Gemini explanation, empty / error / refreshing states.
+- **Phase 3** — Light/dark/system theming, trigger demo scenario menu, accessibility pass, mobile-responsive polish.
