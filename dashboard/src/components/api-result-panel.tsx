@@ -13,7 +13,8 @@ import { Pill } from "@/components/ui/pill";
  */
 interface ApiResultPanelProps {
   readonly title: string;
-  readonly endpoint: string;
+  /** Optional small caption under the title (e.g. data source). Hidden when omitted. */
+  readonly caption?: string;
   readonly hasError: boolean;
   readonly errorMessage?: string;
   readonly isLoading: boolean;
@@ -37,7 +38,7 @@ interface ApiResultPanelProps {
 export function ApiResultPanel(props: ApiResultPanelProps): React.JSX.Element {
   const {
     title,
-    endpoint,
+    caption,
     hasError,
     errorMessage,
     isLoading,
@@ -69,7 +70,7 @@ export function ApiResultPanel(props: ApiResultPanelProps): React.JSX.Element {
           >
             {title}
           </h2>
-          <p className="truncate font-mono text-[11px] text-fg-subtle">{endpoint}</p>
+          {caption ? <p className="truncate text-[11px] text-fg-subtle">{caption}</p> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {headerActions}
