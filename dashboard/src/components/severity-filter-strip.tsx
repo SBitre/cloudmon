@@ -2,18 +2,11 @@
 
 import { Icons } from "@/components/ui/icons";
 import { Pill, type PillTone } from "@/components/ui/pill";
-import { setSettings, useSettings, type SeverityFilter } from "@/lib/store/settings";
+import { countBySeverity } from "@/lib/derive/alerts";
+import { toggleFilter, useFilters } from "@/lib/store/filters";
 import type { Alert, Severity } from "@/lib/types/api";
 
-/**
- * Clickable severity-filter chip strip.
- *
- * Each visible severity gets a Pill whose pressed state matches whether
- * that severity is currently in the filter set; clicking toggles it.
- * Counts come from the live alerts list so users see the impact of
- * filtering at a glance.
- */
-const SEVERITIES: ReadonlyArray<{ key: SeverityFilter; tone: PillTone; label: string; iconKey: keyof typeof Icons }> = [
+const SEVERITIES: ReadonlyArray<{ key: Severity; tone: PillTone; label: string; iconKey: keyof typeof Icons }> = [
   { key: "critical", tone: "critical", label: "critical", iconKey: "critical" },
   { key: "error", tone: "error", label: "error", iconKey: "error" },
   { key: "warning", tone: "warning", label: "warning", iconKey: "warning" },
@@ -25,13 +18,8 @@ interface SeverityFilterStripProps {
 }
 
 export function SeverityFilterStrip({ alerts }: SeverityFilterStripProps): React.JSX.Element {
-  const filter = useSettings((s) => s.severityFilter);
+  const filter = useFilters((s) => s.severity);
   const counts = countBySeverity(alerts);
-
-  function toggle(key: SeverityFilter): void {
-    const next = filter.includes(key) ? filter.filter((s) => s !== key) : [...filter, key];
-    setSettings({ severityFilter: next });
-  }
 
   return (
     <div role="group" aria-label="Filter alerts by severity" className="flex flex-wrap items-center gap-2">
@@ -48,7 +36,7 @@ export function SeverityFilterStrip({ alerts }: SeverityFilterStripProps): React
             key={s.key}
             type="button"
             aria-pressed={active}
-            onClick={() => toggle(s.key)}
+            onClick={() => toggleFilter("severity", s.key)}
             className={`rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base ${
               active ? "opacity-100" : "opacity-50 hover:opacity-90"
             }`}
@@ -59,12 +47,4 @@ export function SeverityFilterStrip({ alerts }: SeverityFilterStripProps): React
       })}
     </div>
   );
-}
-
-function countBySeverity(alerts: readonly Alert[]): Record<Severity, number> {
-  const init: Record<Severity, number> = { info: 0, warning: 0, error: 0, critical: 0 };
-  for (const alert of alerts) {
-    init[alert.severity] += 1;
-  }
-  return init;
 }

@@ -21,7 +21,6 @@ export type PollingInterval = "off" | 1000 | 3000 | 5000 | 10000;
 export type VolumeWindowMinutes = 15 | 30 | 60 | 120;
 export type Density = "comfortable" | "compact";
 export type Accent = "emerald" | "blue" | "violet" | "amber";
-export type SeverityFilter = "info" | "warning" | "error" | "critical";
 
 export interface Settings {
   /** SWR refresh interval. `"off"` disables polling. */
@@ -32,8 +31,6 @@ export interface Settings {
   readonly density: Density;
   /** Accent color tone (drives `--color-accent*` CSS vars). */
   readonly accent: Accent;
-  /** Severity levels currently visible in the alerts panel. Empty set hides all. */
-  readonly severityFilter: ReadonlyArray<SeverityFilter>;
 }
 
 const DEFAULTS: Settings = {
@@ -41,7 +38,6 @@ const DEFAULTS: Settings = {
   volumeWindowMinutes: 30,
   density: "comfortable",
   accent: "emerald",
-  severityFilter: ["info", "warning", "error", "critical"],
 };
 
 const STORAGE_KEY = "cloudmon.settings.v1";
@@ -75,9 +71,6 @@ function read(): Settings {
         : DEFAULTS.volumeWindowMinutes,
       density: isDensity(parsed.density) ? parsed.density : DEFAULTS.density,
       accent: isAccent(parsed.accent) ? parsed.accent : DEFAULTS.accent,
-      severityFilter: Array.isArray(parsed.severityFilter)
-        ? (parsed.severityFilter.filter(isSeverity) as SeverityFilter[])
-        : DEFAULTS.severityFilter,
     };
   } catch {
     return DEFAULTS;
@@ -173,8 +166,4 @@ function isDensity(value: unknown): value is Density {
 
 function isAccent(value: unknown): value is Accent {
   return value === "emerald" || value === "blue" || value === "violet" || value === "amber";
-}
-
-function isSeverity(value: unknown): value is SeverityFilter {
-  return value === "info" || value === "warning" || value === "error" || value === "critical";
 }

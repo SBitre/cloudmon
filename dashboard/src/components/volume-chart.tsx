@@ -13,6 +13,7 @@ import {
 } from "recharts";
 
 import { formatHourMinute, formatLocalDateTime } from "@/lib/format/time";
+import { setFilters, useFilters } from "@/lib/store/filters";
 import { useSettings } from "@/lib/store/settings";
 import type { VolumeBucket } from "@/lib/types/api";
 
@@ -48,6 +49,15 @@ export function VolumeChart({ buckets, windowMinutes }: VolumeChartProps): React
     ? `${visible.length} / ${effectiveWindow} min`
     : `${visible.length} min`;
 
+  const selectedMinute = useFilters((s) => s.minute);
+
+  function handleBarClick(payload: { minute?: string } | undefined): void {
+    if (!payload?.minute) {
+      return;
+    }
+    setFilters({ minute: selectedMinute === payload.minute ? null : payload.minute });
+  }
+
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-baseline gap-x-6 gap-y-1">
@@ -75,6 +85,10 @@ export function VolumeChart({ buckets, windowMinutes }: VolumeChartProps): React
               <linearGradient id="cloudmon-bar-live" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={FILL_LIVE} stopOpacity={1} />
                 <stop offset="100%" stopColor={FILL_LIVE} stopOpacity={0.7} />
+              </linearGradient>
+              <linearGradient id="cloudmon-bar-selected" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--color-warning)" stopOpacity={1} />
+                <stop offset="100%" stopColor="var(--color-warning)" stopOpacity={0.7} />
               </linearGradient>
             </defs>
             <CartesianGrid stroke="var(--color-stroke)" strokeDasharray="3 3" vertical={false} />
@@ -110,13 +124,30 @@ export function VolumeChart({ buckets, windowMinutes }: VolumeChartProps): React
               labelFormatter={(label) => formatLocalDateTime(String(label))}
               formatter={(value) => [String(value), "events"]}
             />
-            <Bar dataKey="count" radius={[3, 3, 0, 0]} isAnimationActive={false}>
-              {visible.map((bucket, index) => (
-                <Cell
-                  key={bucket.minute}
-                  fill={index === visible.length - 1 ? "url(#cloudmon-bar-live)" : "url(#cloudmon-bar)"}
-                />
-              ))}
+            <Bar
+              dataKey="count"
+              radius={[3, 3, 0, 0]}
+              isAnimationActive={false}
+              onClick={(data) => handleBarClick(data as { minute?: string })}
+              cursor="pointer"
+            >
+              {visible.map((bucket, index) => {
+                const isSelected = selectedMinute === bucket.minute;
+                const isLatest = index === visible.length - 1;
+                let fill = "url(#cloudmon-bar)";
+                if (isSelected) {
+                  fill = "url(#cloudmon-bar-selected)";
+                } else if (isLatest) {
+                  fill = "url(#cloudmon-bar-live)";
+                }
+                return (
+                  <Cell
+                    key={bucket.minute}
+                    fill={fill}
+                    fillOpacity={selectedMinute && !isSelected ? 0.4 : 1}
+                  />
+                );
+              })}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
