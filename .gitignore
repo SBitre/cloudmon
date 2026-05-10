@@ -87,3 +87,6 @@ lambdas/*/typing_extensions.py
 lambdas/*/typing_inspection/
 lambdas/*/urllib3/
 lambdas/*/websockets/
+
+# Local debugging artifacts
+alerts.json
