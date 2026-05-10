@@ -44,3 +44,10 @@ module "read_api" {
   alerts_table_name = module.storage.alerts_table_name
   alerts_table_arn  = module.storage.alerts_table_arn
 }
+
+module "frontend" {
+  source = "./modules/frontend"
+
+  project_name = var.project_name
+  aws_region   = var.aws_region
+}
