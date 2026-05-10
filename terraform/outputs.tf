@@ -67,3 +67,18 @@ output "read_api_log_group" {
   value       = module.read_api.lambda_log_group
   description = "CloudWatch log group for read API"
 }
+
+output "dashboard_bucket_name" {
+  value       = module.frontend.dashboard_bucket_name
+  description = "S3 bucket holding dashboard static files"
+}
+
+output "dashboard_url" {
+  value       = module.frontend.dashboard_cloudfront_url
+  description = "Public HTTPS URL of the deployed dashboard"
+}
+
+output "dashboard_distribution_id" {
+  value       = module.frontend.dashboard_cloudfront_distribution_id
+  description = "CloudFront distribution ID (use for cache invalidation after redeploys)"
+}
