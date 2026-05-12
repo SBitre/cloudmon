@@ -48,7 +48,7 @@ Five Lambda-backed components, two HTTP APIs, two DynamoDB tables, one EventBrid
 | Backend Engineer | Darkhan & Kanav | `/lambdas/ingest`, `/lambdas/api` |
 | Detection + AI Engineer | Gospelhope | `/lambdas/detection` |
 | Simulator + Frontend | Mehek | `/simulator`, `/dashboard` |
-| Documentation + Demo | Kanav | `/docs` |
+| Documentation | Gospelhope | `/docs` |
 
 ## Branching & contributing
 
