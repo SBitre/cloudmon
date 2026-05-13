@@ -44,6 +44,9 @@ resource "aws_iam_role_policy" "detection_dynamodb" {
         Effect = "Allow"
         Action = [
           "dynamodb:PutItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:GetItem",
         ]
         Resource = var.alerts_table_arn
       }
