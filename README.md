@@ -531,7 +531,7 @@ aws dynamodb delete-table --table-name cloudmon-tfstate-lock --region us-east-1
 |---|---|---|
 | **Sumukh Pitre** | Infrastructure Lead | 5 Terraform modules, IAM, deployment, IaC patterns |
 | **Darkhan Akmyrza** | Backend (Ingest + Read API) | Lambdas, validation, Decimal serialization fix |
-| **Hope (gospelhope)** | Detection + AI Integration | Rule engine, Gemini integration, deduplication |
+| **Gospelhope** | Detection + AI Integration | Rule engine, Gemini integration, deduplication |
 | **Mehek Khan** | Simulator + Dashboard | 73-test simulator, full Next.js dashboard |
 | **Kanav** | AWS Account | Provisioned deployment environment |
 
